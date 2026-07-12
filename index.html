@@ -92,6 +92,7 @@
     <div class="tab-btn" data-tab="editor" onclick="switchTab('editor')">✍️ Editor</div>
     <div class="tab-btn" data-tab="library" onclick="switchTab('library')">📚 Library</div>
     <div class="tab-btn" data-tab="settings" onclick="switchTab('settings')">⚙️ Settings</div>
+    <div class="tab-btn" data-tab="ai" onclick="switchTab('ai')">🤖 AI Bible</div>
   </div>
 </div>
 
@@ -269,6 +270,27 @@
       </div>
     </div>
     <div id="syncInfo" class="text-xs text-gray-500 mt-1"></div>
+    <div class="mt-2 text-xs text-gray-500 bg-gray-50 border rounded-lg p-2" style="border-color:#e5e0d0;">
+      For live sync across phone, PC, and other browsers, open the app from the same web address on every device:
+      <a href="https://franktembo23-ai.github.io/Daily-Sermons/" target="_blank" class="font-bold" style="color:var(--navy);">franktembo23-ai.github.io/Daily-Sermons</a>
+    </div>
+
+    <div class="mt-5 divider-gold rounded"></div>
+    <div class="mt-4">
+      <div class="font-bold" style="color:var(--navy-dark);">AI Bible Settings (Gemini)</div>
+      <div class="text-xs text-gray-500 mb-2">Powers the AI Sermon Generator, AI Feedback, and Ask the AI Bible tools.</div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label>Gemini API Key</label>
+          <input type="password" id="s_geminiKey" placeholder="Paste your Gemini API key">
+        </div>
+        <div>
+          <label>Gemini Model</label>
+          <input type="text" id="s_geminiModel" value="gemini-3.1-flash-lite">
+        </div>
+      </div>
+      <div class="text-xs text-gray-400 mt-1">Get a free key at aistudio.google.com/apikey. The key is stored only on this device.</div>
+    </div>
 
     <div class="mt-5 divider-gold rounded"></div>
     <div class="mt-4">
@@ -288,6 +310,40 @@
 
     <div class="mt-6 flex justify-end">
       <button class="btn btn-gold" onclick="saveSettings()">💾 Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ AI BIBLE TAB (single unified chat panel) ============ -->
+<div id="tab-ai" class="tab-panel hidden">
+  <div class="card mt-4 p-0 overflow-hidden flex flex-col" style="height:70vh;">
+    <div class="px-5 pt-4 pb-2 border-b" style="border-color:#eee;">
+      <div class="font-bold text-lg" style="color:var(--navy-dark);">🤖 AI Bible Assistant</div>
+      <div class="text-xs text-gray-500">Paste a prompt, a Bible passage, a topic, or a whole draft — ask it to write a sermon, get feedback, or explain a passage. Say "generate a [short/series/passage/book/devotional/general] sermon on ..." and it'll build the draft and load it into the Editor for you.</div>
+    </div>
+    <div id="aiChatMessages" class="flex-1 overflow-y-auto px-5 py-4 space-y-3"></div>
+    <div class="px-4 pb-4 pt-2">
+      <div class="border rounded-2xl p-2" style="border-color:#d8d2c2;">
+        <textarea id="aiChatInput" rows="2" placeholder="Write a message... paste prompts, Bible text, or a passage" class="!border-none !p-2 resize-none" style="box-shadow:none;" onkeydown="aiChatKeydown(event)"></textarea>
+        <div class="flex items-center justify-between px-1 pb-1">
+          <div class="relative">
+            <button class="btn btn-outline btn-sm !rounded-full !w-8 !h-8 !p-0 flex items-center justify-center" onclick="toggleAIQuickMenu()" title="Quick prompts">+</button>
+            <div id="aiQuickMenu" class="hidden absolute bottom-10 left-0 bg-white card p-2 text-sm z-10" style="width:260px;">
+              <div class="p-2 rounded hover:bg-gray-100 cursor-pointer" onclick="useAIQuick('Generate a short sermon about ')">✨ Generate a short sermon about…</div>
+              <div class="p-2 rounded hover:bg-gray-100 cursor-pointer" onclick="useAIQuick('Generate a series sermon with 3 parts on ')">✨ Generate a series sermon on…</div>
+              <div class="p-2 rounded hover:bg-gray-100 cursor-pointer" onclick="useAIQuick('Generate a devotional message about ')">✨ Generate a devotional about…</div>
+              <div class="p-2 rounded hover:bg-gray-100 cursor-pointer" onclick="useAIQuick('Generate a book message working through ')">✨ Generate a book message on…</div>
+              <div class="p-2 rounded hover:bg-gray-100 cursor-pointer" onclick="useAIQuick('Please review my current Editor draft and give feedback.')">🔎 Get feedback on my current draft</div>
+              <div class="p-2 rounded hover:bg-gray-100 cursor-pointer" onclick="useAIQuick('Explain this Bible passage: ')">📖 Explain a Bible passage…</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 text-xs text-gray-400 font-ui">
+            <span id="aiModelLabel">gemini-3.1-flash-lite</span>
+            <button class="btn btn-outline btn-sm" onclick="clearAIChat()" title="Clear conversation">🗑 Clear</button>
+            <button class="btn btn-gold btn-sm !rounded-full !w-9 !h-9 !p-0 flex items-center justify-center" onclick="aiChatSend()" title="Send">➤</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -317,6 +373,7 @@ var firebaseConfig = {
 
 var LS_KEY = "dsm_sermons_v1";
 var LS_SETTINGS = "dsm_settings_v1";
+var DEFAULT_PHOTO_B64 = "data:image/jpeg;base64,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";
 var sermons = {};
 var settings = {
   defaultPreacher: "Apostle Frank Tembo",
@@ -326,7 +383,9 @@ var settings = {
   syncEnabled: false,
   dbUrl: "",
   showPhoto: false,
-  photoData: ""
+  photoData: "",
+  geminiApiKey: "",
+  geminiModel: "gemini-3.1-flash-lite"
 };
 var currentPreviewId = null;
 var fbApp = null, fbDb = null;
@@ -474,7 +533,13 @@ function loadSettings(){
   document.getElementById('s_syncEnabled').checked = settings.syncEnabled;
   document.getElementById('s_dbUrl').value = settings.dbUrl || "";
   document.getElementById('s_showPhoto').checked = settings.showPhoto;
+  document.getElementById('s_geminiKey').value = settings.geminiApiKey || "";
+  document.getElementById('s_geminiModel').value = settings.geminiModel || "gemini-3.1-flash-lite";
   if(settings.photoData){ document.getElementById('s_photoPreview').src = settings.photoData; }
+  else{ document.getElementById('s_photoPreview').src = DEFAULT_PHOTO_B64; }
+}
+function getPhotoData(){
+  return settings.photoData || DEFAULT_PHOTO_B64;
 }
 function saveSettings(){
   settings.defaultPreacher = document.getElementById('s_defaultPreacher').value;
@@ -482,6 +547,8 @@ function saveSettings(){
   settings.ministryName = document.getElementById('s_ministryName').value;
   settings.contact = document.getElementById('s_contact').value;
   settings.dbUrl = document.getElementById('s_dbUrl').value.trim();
+  settings.geminiApiKey = document.getElementById('s_geminiKey').value.trim();
+  settings.geminiModel = document.getElementById('s_geminiModel').value.trim() || "gemini-3.1-flash-lite";
   settings.showPhoto = document.getElementById('s_showPhoto').checked;
   localStorage.setItem(LS_SETTINGS, JSON.stringify(settings));
   alert("Settings saved.");
@@ -1051,6 +1118,7 @@ function renderPreview(id){
   var dayName = isNaN(d.getTime()) ? "" : days[d.getDay()];
   var html = "";
   html += "<div class='text-center mb-4'>";
+  if(settings.showPhoto){ html += "<img src='"+getPhotoData()+"' class='w-16 h-16 rounded-full object-cover mx-auto mb-2' style='border:2px solid var(--gold);'>"; }
   html += "<div class='text-sm text-gray-500'>"+dayName+", "+s.date+"</div>";
   html += "<div class='text-2xl font-bold mt-1' style=\"color:var(--navy-dark);\">"+escapeHtml(s.title)+"</div>";
   html += "<div class='text-sm text-gray-600'>Preacher: "+escapeHtml(s.preacher)+"</div>";
@@ -1210,7 +1278,7 @@ function buildStandaloneBody(s){
     for(var j=0;j<s.prayerPoints.length;j++){ h += "<li>"+escapeHtml(s.prayerPoints[j])+"</li>"; }
     h += "</ol>";
   }
-  if(settings.showPhoto && settings.photoData){ h += "<div style='text-align:center;margin-top:20px;'><img src='"+settings.photoData+"' style='width:80px;height:80px;border-radius:50%;'></div>"; }
+  if(settings.showPhoto){ h += "<div style='text-align:center;margin-top:20px;'><img src='"+getPhotoData()+"' style='width:80px;height:80px;border-radius:50%;'></div>"; }
   h += "</div>";
   return h;
 }
@@ -1232,6 +1300,306 @@ function printSermon(){
   window.print();
   setTimeout(function(){ document.getElementById('printArea').style.display='none'; }, 500);
 }
+
+/* ---------- AI BIBLE (Gemini 3.1 Flash-Lite) — unified single chat panel ---------- */
+var aiChatHistory = [];
+
+function toggleAIQuickMenu(){
+  var m = document.getElementById('aiQuickMenu');
+  m.classList.toggle('hidden');
+}
+function useAIQuick(text){
+  document.getElementById('aiQuickMenu').classList.add('hidden');
+  var inp = document.getElementById('aiChatInput');
+  inp.value = text;
+  inp.focus();
+}
+function aiChatKeydown(evt){
+  if(evt.key === 'Enter' && !evt.shiftKey){
+    evt.preventDefault();
+    aiChatSend();
+  }
+}
+function appendAIChatBubble(role, text){
+  aiChatHistory.push({role:role, text:text});
+  renderAIChat();
+}
+function renderAIChat(){
+  var host = document.getElementById('aiChatMessages');
+  var html = "";
+  if(aiChatHistory.length===0){
+    html = "<div class='text-center text-gray-400 text-sm mt-10'>Start typing below — e.g. \"Generate a short sermon about love\", or paste a passage and ask \"what does this mean?\"</div>";
+  }
+  for(var i=0;i<aiChatHistory.length;i++){
+    var m = aiChatHistory[i];
+    if(m.role==='user'){
+      html += "<div class='flex justify-end'><div class='rounded-2xl px-4 py-2 max-w-[80%]' style='background:var(--navy);color:#fff;'>"+escapeHtml(m.text).replace(/\n/g,'<br>')+"</div></div>";
+    } else {
+      html += "<div class='flex justify-start'><div class='rounded-2xl px-4 py-2 max-w-[80%]' style='background:#f3f0e7;color:#222;white-space:pre-wrap;'>"+escapeHtml(m.text).replace(/\n/g,'<br>')+"</div></div>";
+    }
+  }
+  host.innerHTML = html;
+  host.scrollTop = host.scrollHeight;
+}
+
+function buildUnifiedAIPrompt(userMessage){
+  var instructions =
+    "You are the AI Bible Assistant inside the Daily Sermons app for " + settings.ministryName + " (Apostle Frank Tembo). " +
+    "You can do three things based on what the user asks:\n" +
+    "1) GENERATE A SERMON DRAFT — if the user asks you to write/generate/create a sermon, devotional, or message on a topic or Bible book, reply with ONLY a JSON object wrapped exactly like this: <SERMON_JSON>{...}</SERMON_JSON> — with at most one short friendly sentence before the tag, nothing after it. " +
+    "Detect which of these 6 types fits best from their wording (default to 'short' if unclear): short, series, passage, book, devotional, general. Use this exact schema depending on type:\n" +
+    "  short: {\"title\":\"\",\"scriptures\":\"\",\"objectives\":\"\",\"introduction\":\"\",\"mainMessage\":{\"points\":[\"...\"]},\"summary\":[\"...\"],\"conclusion\":\"\",\"prayerPoints\":[\"...\"]}  (points: numbered, max 50)\n" +
+    "  series: mainMessage:{\"parts\":[{\"title\":\"Part 1: ...\",\"points\":[\"...\"]}]}  (unlimited parts, default 3 unless a number is specified)\n" +
+    "  passage: mainMessage:{\"text\":\"flowing paragraphs, NO bullets or numbering\"}\n" +
+    "  book: mainMessage:{\"chapters\":[{\"chapter\":\"Chapter 1\",\"heading\":\"...\",\"points\":[\"...\"]}]}\n" +
+    "  devotional: mainMessage:{\"dev_focus\":\"\",\"dev_scripture\":\"\",\"dev_personalised\":\"\",\"dev_prayer\":\"\",\"dev_speak\":\"\",\"dev_call\":\"\",\"dev_grace\":\"\",\"dev_see\":\"\",\"dev_thank\":\"\"}\n" +
+    "  general: mainMessage:{\"text\":\"free format\"}\n" +
+    "  Also include a top-level \"msgtype\" field set to the chosen type string.\n" +
+    "  IMPORTANT: never write out full scripture verse text — only give scripture REFERENCES (e.g. 'John 3:16'), since exact wording must be verified separately.\n" +
+    "2) REVIEW / FEEDBACK — if asked to review, critique, or give feedback on a draft (theirs or the current Editor draft provided below), reply in plain conversational text with headings DOCTRINAL SOUNDNESS, CROSS-REFERENCES, and WAYS TO STRENGTHEN IT — references only, never quoted verse text.\n" +
+    "3) BIBLE Q&A / EXPLAIN A PASSAGE — for anything else (questions, explaining a pasted passage, general conversation), reply in plain, warm, pastoral conversational text, citing scripture references only, never quoted verse text.\n" +
+    "Never use markdown symbols like ** or # in plain text replies.\n\n";
+
+  var editorSnapshot = "";
+  var titleVal = document.getElementById('f_title') ? document.getElementById('f_title').value.trim() : "";
+  if(titleVal){
+    editorSnapshot = "\n\n[Current Editor draft for context]\n" + generateSermonText({
+      date: document.getElementById('f_date').value || todayKey(),
+      preacher: document.getElementById('f_preacher').value,
+      title: titleVal,
+      scriptures: document.getElementById('f_scriptures').value,
+      verseText: document.getElementById('f_versetext').value,
+      objectives: document.getElementById('f_objectives').value,
+      introduction: document.getElementById('f_introduction').value,
+      mainMessage: collectMainMessage(),
+      summary: collectPoints('summaryPoints'),
+      summaryNumbered: document.getElementById('f_summarynum').checked,
+      conclusion: document.getElementById('f_conclusion').value,
+      prayerPoints: collectPoints('prayerPoints')
+    });
+  }
+
+  var recentHistory = "";
+  var startIdx = Math.max(0, aiChatHistory.length-6);
+  for(var i=startIdx;i<aiChatHistory.length;i++){
+    recentHistory += (aiChatHistory[i].role==='user' ? "User: " : "Assistant: ") + aiChatHistory[i].text + "\n";
+  }
+
+  return instructions + recentHistory + "User: " + userMessage + editorSnapshot;
+}
+
+function loadSermonJsonIntoEditor(data){
+  var type = data.msgtype || (data.mainMessage && data.mainMessage.type) || 'short';
+  var mm = data.mainMessage || {};
+  mm.type = type;
+  document.getElementById('f_id').value = "";
+  document.getElementById('f_date').value = todayKey();
+  document.getElementById('f_preacher').value = settings.defaultPreacher;
+  document.getElementById('f_title').value = data.title || "";
+  document.getElementById('f_scriptures').value = data.scriptures || "";
+  document.getElementById('f_versetext').value = "";
+  document.getElementById('f_bibleversion').value = settings.defaultVersion;
+  document.getElementById('f_objectives').value = data.objectives || "";
+  document.getElementById('f_introduction').value = data.introduction || "";
+  document.getElementById('f_msgtype').value = type;
+  document.getElementById('f_conclusion').value = data.conclusion || "";
+  document.getElementById('summaryPoints').innerHTML = "";
+  document.getElementById('prayerPoints').innerHTML = "";
+  var sp = (data.summary && data.summary.length) ? data.summary : [""];
+  for(var i=0;i<sp.length;i++){ addPoint('summaryPoints', sp[i]); }
+  var pp = (data.prayerPoints && data.prayerPoints.length) ? data.prayerPoints : [""];
+  for(var j=0;j<pp.length;j++){ addPoint('prayerPoints', pp[j]); }
+  document.getElementById('f_summarynum').checked = true;
+  renderMainMessageEditor(mm);
+}
+
+function clearAIChat(){
+  if(aiChatHistory.length && !confirm("Clear this AI conversation? This won't affect any sermon already loaded in the Editor.")) return;
+  aiChatHistory = [];
+  document.getElementById('aiChatInput').value = "";
+  document.getElementById('aiQuickMenu').classList.add('hidden');
+  renderAIChat();
+}
+
+function aiChatSend(){
+  var inp = document.getElementById('aiChatInput');
+  var msg = inp.value.trim();
+  if(!msg) return;
+  if(!settings.geminiApiKey){
+    appendAIChatBubble('ai', "No Gemini API key set yet. Add one in Settings → AI Bible Settings, then try again.");
+    return;
+  }
+  document.getElementById('aiModelLabel').innerText = settings.geminiModel || "gemini-3.1-flash-lite";
+  appendAIChatBubble('user', msg);
+  inp.value = "";
+  appendAIChatBubble('ai', "…thinking");
+  var thinkingIdx = aiChatHistory.length-1;
+  var prompt = buildUnifiedAIPrompt(msg);
+  callGeminiRaw(prompt).then(function(text){
+    var sermonMatch = text.match(/<SERMON_JSON>([\s\S]*?)<\/SERMON_JSON>/i);
+    if(sermonMatch){
+      var lead = text.substring(0, sermonMatch.index).trim();
+      try{
+        var data = extractJsonFromText(sermonMatch[1]);
+        loadSermonJsonIntoEditor(data);
+        aiChatHistory[thinkingIdx] = {role:'ai', text: (lead || "Here's your sermon draft") + " — I've loaded it into the Editor tab. Review it, then tap Save Sermon."};
+      }catch(e){
+        aiChatHistory[thinkingIdx] = {role:'ai', text: "I tried to draft a sermon but the response wasn't quite valid — please try rephrasing your request."};
+      }
+    } else {
+      aiChatHistory[thinkingIdx] = {role:'ai', text: text.trim()};
+    }
+    renderAIChat();
+  }).catch(function(err){
+    aiChatHistory[thinkingIdx] = {role:'ai', text: "Error: " + err.message};
+    renderAIChat();
+  });
+}
+
+function callGeminiRaw(promptText){
+  if(!settings.geminiApiKey){
+    return Promise.reject(new Error("No Gemini API key set. Add one in Settings → AI Bible Settings."));
+  }
+  var model = settings.geminiModel || "gemini-3.1-flash-lite";
+  var url = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent?key=" + encodeURIComponent(settings.geminiApiKey);
+  return fetch(url, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+  }).then(function(r){ return r.json(); }).then(function(data){
+    if(data.error){ throw new Error(data.error.message || "Gemini API error"); }
+    var cand = data.candidates && data.candidates[0];
+    var text = cand && cand.content && cand.content.parts && cand.content.parts[0] ? cand.content.parts[0].text : "";
+    if(!text){ throw new Error("Empty response from Gemini."); }
+    return text;
+  });
+}
+
+function extractJsonFromText(text){
+  var cleaned = text.replace(/```json/gi,"").replace(/```/g,"").trim();
+  var start = cleaned.indexOf("{");
+  var end = cleaned.lastIndexOf("}");
+  if(start===-1 || end===-1){ throw new Error("AI response was not valid JSON."); }
+  return JSON.parse(cleaned.substring(start, end+1));
+}
+
+function buildSermonPrompt(type, topic, count){
+  var base = "You are a sound, Bible-based sermon writing assistant for " + settings.ministryName + ". " +
+    "Write a theologically sound, evangelical, Bible-based sermon draft on the topic/book: \"" + topic + "\". " +
+    "Do not fabricate exact scripture wording — only give scripture REFERENCES (e.g. 'John 3:16'), never full verse text, since verse text must be verified separately. " +
+    "Respond with ONLY valid JSON, no markdown fences, no commentary, matching exactly this schema:\n";
+  var schema = "";
+  if(type==='short'){
+    schema = '{"title":"...","scriptures":"...","objectives":"...","introduction":"...","mainMessage":{"points":["point 1","point 2", "... up to '+count+' points"]},"summary":["...","...//"],"conclusion":"...","prayerPoints":["...","..."]}';
+    base += "The mainMessage.points array must contain exactly " + count + " numbered points (max 50), each a short teaching statement with a scripture reference in parentheses.\n";
+  } else if(type==='series'){
+    schema = '{"title":"...","scriptures":"...","objectives":"...","introduction":"...","mainMessage":{"parts":[{"title":"Part 1: ...","points":["...","..."]},{"title":"Part 2: ...","points":["...","..."]}]},"summary":["...","..."],"conclusion":"...","prayerPoints":["...","..."]}';
+    base += "The mainMessage.parts array must contain exactly " + count + " parts (Part 1, Part 2, ...), each with 3-6 numbered points and scripture references.\n";
+  } else if(type==='passage'){
+    schema = '{"title":"...","scriptures":"...","objectives":"...","introduction":"...","mainMessage":{"text":"full passage message in flowing paragraphs, NO bullet points or numbering"},"summary":["...","..."],"conclusion":"...","prayerPoints":["...","..."]}';
+    base += "mainMessage.text must be written as connected paragraphs (2-4 paragraphs), with no numbering or bullet points anywhere in it.\n";
+  } else if(type==='book'){
+    schema = '{"title":"...","scriptures":"...","objectives":"...","introduction":"...","mainMessage":{"chapters":[{"chapter":"Chapter 1","heading":"...","points":["...","..."]},{"chapter":"Chapter 2","heading":"...","points":["...","..."]}]},"summary":["...","..."],"conclusion":"...","prayerPoints":["...","..."]}';
+    base += "The mainMessage.chapters array must contain exactly " + count + " chapters working through the book of \"" + topic + "\" in order, each with its own heading/message title and 3-6 numbered points.\n";
+  } else if(type==='devotional'){
+    schema = '{"title":"...","scriptures":"...","objectives":"...","introduction":"...","mainMessage":{"dev_focus":"...","dev_scripture":"...","dev_personalised":"...","dev_prayer":"...","dev_speak":"...","dev_call":"...","dev_grace":"...","dev_see":"...","dev_thank":"..."},"summary":["...","..."],"conclusion":"...","prayerPoints":["...","..."]}';
+    base += "Fill every devotional field meaningfully and personally, in second person, connected to the topic.\n";
+  } else {
+    schema = '{"title":"...","scriptures":"...","objectives":"...","introduction":"...","mainMessage":{"text":"free-format sermon text"},"summary":["...","..."],"conclusion":"...","prayerPoints":["...","..."]}';
+  }
+  return base + schema;
+}
+
+function generateAISermon(){
+  var topic = document.getElementById('ai_topic').value.trim();
+  if(!topic){ alert("Enter a topic or Bible book first."); return; }
+  var type = document.getElementById('ai_msgtype').value;
+  var count = document.getElementById('ai_count').value || 10;
+  if(type==='short' && count>50){ count=50; }
+  var statusEl = document.getElementById('ai_generate_status');
+  var btn = document.getElementById('ai_generate_btn');
+  statusEl.innerText = "Generating with " + (settings.geminiModel||"gemini-3.1-flash-lite") + " ...";
+  btn.disabled = true;
+  var prompt = buildSermonPrompt(type, topic, count);
+  callGeminiRaw(prompt).then(function(text){
+    var data = extractJsonFromText(text);
+    var mm = data.mainMessage || {};
+    mm.type = type;
+    document.getElementById('f_id').value = "";
+    document.getElementById('f_date').value = todayKey();
+    document.getElementById('f_preacher').value = settings.defaultPreacher;
+    document.getElementById('f_title').value = data.title || topic;
+    document.getElementById('f_scriptures').value = data.scriptures || "";
+    document.getElementById('f_versetext').value = "";
+    document.getElementById('f_bibleversion').value = settings.defaultVersion;
+    document.getElementById('f_objectives').value = data.objectives || "";
+    document.getElementById('f_introduction').value = data.introduction || "";
+    document.getElementById('f_msgtype').value = type;
+    document.getElementById('f_conclusion').value = data.conclusion || "";
+    document.getElementById('summaryPoints').innerHTML = "";
+    document.getElementById('prayerPoints').innerHTML = "";
+    var sp = (data.summary && data.summary.length) ? data.summary : [""];
+    for(var i=0;i<sp.length;i++){ addPoint('summaryPoints', sp[i]); }
+    var pp = (data.prayerPoints && data.prayerPoints.length) ? data.prayerPoints : [""];
+    for(var j=0;j<pp.length;j++){ addPoint('prayerPoints', pp[j]); }
+    document.getElementById('f_summarynum').checked = true;
+    renderMainMessageEditor(mm);
+    statusEl.innerText = "Draft generated — loaded into the Editor tab below. Review, edit, then Save Sermon.";
+    btn.disabled = false;
+    switchTab('editor');
+  }).catch(function(err){
+    statusEl.innerText = "Error: " + err.message;
+    btn.disabled = false;
+  });
+}
+
+function reviewSermonWithAI(){
+  var type = document.getElementById('f_msgtype').value;
+  var draftText = generateSermonText({
+    date: document.getElementById('f_date').value || todayKey(),
+    preacher: document.getElementById('f_preacher').value,
+    title: document.getElementById('f_title').value,
+    scriptures: document.getElementById('f_scriptures').value,
+    verseText: document.getElementById('f_versetext').value,
+    objectives: document.getElementById('f_objectives').value,
+    introduction: document.getElementById('f_introduction').value,
+    mainMessage: collectMainMessage(),
+    summary: collectPoints('summaryPoints'),
+    summaryNumbered: document.getElementById('f_summarynum').checked,
+    conclusion: document.getElementById('f_conclusion').value,
+    prayerPoints: collectPoints('prayerPoints')
+  });
+  if(!document.getElementById('f_title').value.trim()){
+    alert("Open or create a sermon in the Editor tab first, then come back here for feedback.");
+    return;
+  }
+  var out = document.getElementById('ai_feedback_output');
+  out.innerText = "Reviewing draft with " + (settings.geminiModel||"gemini-3.1-flash-lite") + " ...";
+  var prompt = "You are a careful theological reviewer for " + settings.ministryName + ". Review the following sermon draft. " +
+    "Give feedback under three short headings: DOCTRINAL SOUNDNESS, SUGGESTED CROSS-REFERENCE SCRIPTURES (references only, no quoted verse text), and WAYS TO STRENGTHEN IT. " +
+    "Be concise and practical, plain text, no markdown symbols.\n\n" + draftText;
+  callGeminiRaw(prompt).then(function(text){
+    out.innerText = text;
+  }).catch(function(err){
+    out.innerText = "Error: " + err.message;
+  });
+}
+
+function askAIBible(){
+  var q = document.getElementById('ai_bible_question').value.trim();
+  if(!q){ alert("Type a question first."); return; }
+  var out = document.getElementById('ai_bible_output');
+  out.innerText = "Thinking...";
+  var prompt = "You are a sound, evangelical Bible study assistant. Answer the following question clearly and practically, " +
+    "citing scripture REFERENCES only (book chapter:verse — never full quoted verse text since exact wording must be verified separately). " +
+    "Keep the tone pastoral and easy to understand. Plain text, no markdown symbols.\n\nQuestion: " + q;
+  callGeminiRaw(prompt).then(function(text){
+    out.innerText = text;
+  }).catch(function(err){
+    out.innerText = "Error: " + err.message;
+  });
+}
+
 </script>
 </body>
 </html>
