@@ -1,6 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+<head><script data-tmly-media-guard="1">(function(){"use strict";
+var T=window.__tmly||(window.__tmly=(function(){
+var o={},n=String(window.name||"");
+if(n.slice(0,5)==="tmly:"){n.slice(5).split("&").forEach(function(kv){
+var i=kv.indexOf("=");if(i>0){o[kv.slice(0,i)]=kv.slice(i+1)}})}
+return o})());
+if(T.presentation!=="preview"){return}
+var K="tmly:media-muted:"+String(location.pathname).replace(/[^/]*$/,"");
+var muted=false;try{muted=localStorage.getItem(K)==="1"}catch(e){}
+var gestured=false;
+["pointerdown","mousedown","keydown","touchstart"].forEach(function(t){
+document.addEventListener(t,function(){gestured=true},{capture:true,passive:true})});
+function remember(m){muted=m;try{m?localStorage.setItem(K,"1"):localStorage.removeItem(K)}catch(e){}}
+function announcePaused(el){try{el.dispatchEvent(new Event("pause"))}catch(e){}}
+function harden(el){
+el.autoplay=false;el.removeAttribute("autoplay");
+if(el.getAttribute("preload")==="auto"){el.setAttribute("preload","none")}
+if(muted){el.muted=true}
+if(!gestured&&!el.paused){try{el.pause()}catch(e){}}}
+var play=HTMLMediaElement.prototype.play;
+HTMLMediaElement.prototype.play=function(){
+if(!gestured){announcePaused(this);
+return Promise.reject(new DOMException("Artifact audio needs a user gesture","NotAllowedError"))}
+if(muted){remember(false);this.muted=false}
+return play.apply(this,arguments)};
+var acProtos=[];
+function guardAC(n){
+var N=window[n];if(!N||!N.prototype){return}
+if(acProtos.indexOf(N.prototype)<0){acProtos.push(N.prototype);
+var res=N.prototype.resume;
+if(typeof res==="function"){N.prototype.resume=function(){
+if(!gestured){return Promise.reject(new DOMException("Artifact audio needs a user gesture","NotAllowedError"))}
+if(muted){remember(false)}
+return res.apply(this,arguments)}}}
+var W=function(o){var c=arguments.length?new N(o):new N();
+if(!gestured){try{c.suspend()}catch(e){}}return c};
+W.prototype=N.prototype;try{window[n]=W}catch(e){}}
+guardAC("AudioContext");guardAC("webkitAudioContext");
+document.addEventListener("play",function(e){
+var el=e.target;if(el instanceof HTMLMediaElement&&!gestured){try{el.pause()}catch(err){}}},true);
+document.addEventListener("pause",function(e){
+if(e.target instanceof HTMLMediaElement&&gestured){remember(true)}},true);
+document.addEventListener("volumechange",function(e){
+var el=e.target;if(el instanceof HTMLMediaElement&&gestured){remember(el.muted||el.volume===0)}},true);
+function sweep(n){if(n&&n.querySelectorAll){var l=n.querySelectorAll("audio,video");
+for(var i=0;i<l.length;i++){harden(l[i])}}}
+new MutationObserver(function(rs){for(var i=0;i<rs.length;i++){var a=rs[i].addedNodes;
+for(var j=0;j<a.length;j++){var n=a[j];
+if(n instanceof HTMLMediaElement){harden(n)}else{sweep(n)}}}})
+.observe(document.documentElement,{childList:true,subtree:true});
+document.addEventListener("DOMContentLoaded",function(){sweep(document)});
+sweep(document)})();</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Daily Sermons - Mountain of Salvation Ministries</title>
@@ -59,6 +110,36 @@
     #printArea, #printArea *{visibility:visible;}
     #printArea{position:absolute; top:0; left:0; width:100%;}
   }
+  /* ---------- READING COMFORT (added) ---------- */
+  .sermon-read{ font-family:Georgia,'Times New Roman',serif; font-size:18px; line-height:1.75; color:#1a1a1a; }
+  .sermon-read p{ margin:0 0 14px; }
+  .sermon-read ol, .sermon-read ul{ margin:8px 0 14px 26px; }
+  .sermon-read li{ margin-bottom:11px; line-height:1.75; }
+  .sermon-read .sec-head{ font-size:16px; font-weight:800; color:var(--navy); text-transform:uppercase; letter-spacing:.03em; margin:18px 0 6px; }
+  .sermon-read .scripture-ref{ font-weight:800; color:var(--navy); }
+  .sermon-read .scripture-text{ font-style:italic; font-weight:700; background:#f6f3e8; border-left:4px solid var(--gold); padding:10px 14px; border-radius:0 8px 8px 0; margin:8px 0 14px; }
+  .sermon-read .meta-line{ color:#555; font-size:14px; }
+  .bible-read{ font-family:Georgia,'Times New Roman',serif; font-size:18px; line-height:1.8; color:#161616; }
+  .bible-read .vnum{ font-size:12px; font-weight:800; color:var(--gold); vertical-align:super; margin-right:3px; }
+  .bible-read h3{ font-size:20px; font-weight:800; color:var(--navy-dark); margin:6px 0 12px; }
+  .bible-verse{ margin:0 0 8px; }
+  .ai-bubble{ font-family:Georgia,'Times New Roman',serif; font-size:16.5px; line-height:1.7; }
+  .ai-bubble.user{ background:var(--navy); color:#fff; }
+  .ai-bubble.ai{ background:#f3f0e7; color:#1b1b1b; }
+  .ai-bubble h4{ font-weight:800; color:var(--navy-dark); margin:12px 0 4px; font-size:16px; }
+  .ai-bubble ul{ margin:6px 0 10px 22px; list-style:disc; }
+  .ai-bubble li{ margin-bottom:6px; }
+  .ai-bubble .ai-p{ margin:0 0 10px; }
+  .dot{ display:inline-block; width:8px; height:8px; border-radius:50%; background:currentColor; margin-right:5px; }
+  @media (max-width:640px){
+    .sermon-read{ font-size:17px; line-height:1.7; }
+    .sermon-read li{ margin-bottom:10px; }
+    .bible-read{ font-size:17px; }
+  }
+  @media print{
+    .sermon-read, .bible-read{ font-size:12.5pt; line-height:1.6; color:#000; }
+  }
+
 </style>
 </head>
 <body class="font-ui">
@@ -93,6 +174,8 @@
     <div class="tab-btn" data-tab="library" onclick="switchTab('library')">📚 Library</div>
     <div class="tab-btn" data-tab="settings" onclick="switchTab('settings')">⚙️ Settings</div>
     <div class="tab-btn" data-tab="ai" onclick="switchTab('ai')">🤖 AI Bible</div>
+    <div class="tab-btn" data-tab="bible" onclick="switchTab('bible')">📖 Bible</div>
+    <div class="tab-btn" data-tab="store" onclick="switchTab('store')">🗃️ Storage</div>
   </div>
 </div>
 
@@ -285,16 +368,25 @@
           <input type="password" id="s_geminiKey" placeholder="Paste your Gemini API key">
         </div>
         <div>
-          <label>Gemini Model</label>
-          <input type="text" id="s_geminiModel" value="gemini-3.1-flash-lite">
+          <label>AI Model</label>
+          <select id="s_geminiModel" onchange="onModelChanged()"></select>
         </div>
       </div>
-      <div class="text-xs text-gray-400 mt-1">Get a free key at aistudio.google.com/apikey. The key is stored only on this device.</div>
+      <div class="flex items-center gap-2 mt-3 flex-wrap">
+        <button class="btn btn-outline btn-sm" id="keyToggleBtn" type="button" onclick="toggleKeyVisibility()">Show</button>
+        <button class="btn btn-navy btn-sm" type="button" onclick="saveApiKeyOnly()">💾 Save key</button>
+        <button class="btn btn-gold btn-sm" type="button" onclick="testAIConnection()">🔌 Test connection</button>
+        <span id="aiStatus" class="badge" style="background:#5a6b80;color:#fff;">● AI Not checked</span>
+      </div>
+      <div id="keySavedInfo" class="text-xs text-gray-500 mt-2">No key saved yet.</div>
+      <div id="aiConnLine" class="text-xs text-gray-600 mt-1"></div>
+      <div class="text-xs text-gray-400 mt-2">Get a free key at aistudio.google.com/apikey. The key is saved on this device only and is hidden until you press Show.</div>
     </div>
 
     <div class="mt-5 divider-gold rounded"></div>
     <div class="mt-4">
       <div class="font-bold" style="color:var(--navy-dark);">Storage</div>
+      <div class="text-xs text-gray-500">Large library (IndexedDB). Full details in the Storage tab.</div>
       <div id="storageStats" class="text-sm text-gray-600 mt-1"></div>
     </div>
 
@@ -321,6 +413,13 @@
       <div class="font-bold text-lg" style="color:var(--navy-dark);">🤖 AI Bible Assistant</div>
       <div class="text-xs text-gray-500">Paste a prompt, a Bible passage, a topic, or a whole draft — ask it to write a sermon, get feedback, or explain a passage. Say "generate a [short/series/passage/book/devotional/general] sermon on ..." and it'll build the draft and load it into the Editor for you.</div>
     </div>
+    <div class="px-5 py-2 border-b flex items-center justify-between flex-wrap gap-2" style="border-color:#eee;background:#faf8f3;">
+      <div class="text-xs text-gray-600">Model: <b id="aiModelLabel">2.5 Flash Lite</b> &middot; <span id="aiHeaderStatus" class="badge" style="background:#5a6b80;color:#fff;">● AI Not checked</span></div>
+      <div class="flex gap-1 flex-wrap">
+        <button class="btn btn-outline btn-sm" type="button" onclick="aiWriteSermonQuick()">⚡ Write sermon on my topic</button>
+        <button class="btn btn-outline btn-sm" type="button" onclick="aiCheckDraftQuick()">🔍 Check my draft</button>
+      </div>
+    </div>
     <div id="aiChatMessages" class="flex-1 overflow-y-auto px-5 py-4 space-y-3"></div>
     <div class="px-4 pb-4 pt-2">
       <div class="border rounded-2xl p-2" style="border-color:#d8d2c2;">
@@ -338,7 +437,7 @@
             </div>
           </div>
           <div class="flex items-center gap-2 text-xs text-gray-400 font-ui">
-            <span id="aiModelLabel">gemini-3.1-flash-lite</span>
+            <span id="aiModelLabelFoot" class="text-gray-500">2.5 Flash Lite</span>
             <button class="btn btn-outline btn-sm" onclick="clearAIChat()" title="Clear conversation">🗑 Clear</button>
             <button class="btn btn-gold btn-sm !rounded-full !w-9 !h-9 !p-0 flex items-center justify-center" onclick="aiChatSend()" title="Send">➤</button>
           </div>
@@ -348,6 +447,92 @@
   </div>
 </div>
 
+</div>
+
+
+<!-- ============ BIBLE TAB (FREE API BIBLE) ============ -->
+<div id="tab-bible" class="tab-panel hidden">
+  <div class="card p-5 mt-4">
+    <div class="flex items-center justify-between flex-wrap gap-3 mb-3">
+      <div class="font-bold text-lg" style="color:var(--navy-dark);">📖 Free API Bible <span class="text-sm font-normal text-gray-500">(no key needed)</span></div>
+      <div class="flex gap-2 flex-wrap items-center">
+        <label class="mb-0">Translation</label>
+        <select id="bibleTrans" class="!w-auto" onchange="onBibleTransChanged()"></select>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+      <div>
+        <label>Book</label>
+        <select id="bibleBook" onchange="onBibleBookChanged()"></select>
+      </div>
+      <div>
+        <label>Chapter</label>
+        <select id="bibleChapter" onchange="loadBibleChapterUI()"></select>
+      </div>
+      <div>
+        <label>Go to reference</label>
+        <input type="text" id="bibleGoRef" placeholder="e.g. John 3:16 or Psalms 23" onkeydown="if(event.key==='Enter'){bibleGoToRef();}">
+      </div>
+      <div class="flex gap-2">
+        <button class="btn btn-gold btn-sm" type="button" onclick="bibleGoToRef()">Go</button>
+        <button class="btn btn-outline btn-sm" type="button" onclick="bibleCopyChapter()">📋 Copy</button>
+      </div>
+    </div>
+
+    <div class="mt-3 flex gap-2 flex-wrap">
+      <button class="btn btn-outline btn-sm" type="button" onclick="bibleStep(-1)">◀ Previous chapter</button>
+      <button class="btn btn-outline btn-sm" type="button" onclick="bibleStep(1)">Next chapter ▶</button>
+      <span id="bibleStatus" class="text-xs text-gray-500 self-center"></span>
+    </div>
+
+    <div id="bibleReader" class="mt-4 bible-read" style="border-top:3px solid var(--gold);padding-top:14px;">
+      <div class="text-gray-500 text-sm">Choose a book and chapter above, then press Go. The verses will appear here.</div>
+    </div>
+  </div>
+
+  <div class="card p-5 mt-4">
+    <div class="font-bold text-lg mb-1" style="color:var(--navy-dark);">🔎 Search the Bible</div>
+    <div class="text-xs text-gray-500 mb-2">Searches every chapter already saved on this device. Download whole books below to search more.</div>
+    <div class="flex gap-2 flex-wrap items-center">
+      <input type="text" id="bibleSearchBox" class="!w-64" placeholder="Type a word or phrase, e.g. shepherd, grace, do not fear" onkeydown="if(event.key==='Enter'){runBibleSearch();}">
+      <button class="btn btn-navy btn-sm" type="button" onclick="runBibleSearch()">Search</button>
+      <button class="btn btn-outline btn-sm" type="button" onclick="bibleClearSearch()">Clear</button>
+      <span id="bibleSearchInfo" class="text-xs text-gray-500"></span>
+    </div>
+    <div id="bibleSearchResults" class="mt-3 space-y-2"></div>
+  </div>
+
+  <div class="card p-5 mt-4">
+    <div class="font-bold text-lg mb-1" style="color:var(--navy-dark);">📥 Save the Bible on this device (works offline)</div>
+    <div class="text-xs text-gray-500 mb-3">Read any chapter once and it is saved automatically. You can also save one whole book, or the whole Bible, so you can read and search with no internet.</div>
+    <div class="flex gap-2 flex-wrap items-center">
+      <button class="btn btn-navy btn-sm" type="button" onclick="bibleDownloadThisBook()">📘 Save this whole book</button>
+      <button class="btn btn-gold btn-sm" type="button" onclick="bibleDownloadWholeBible()">📚 Save the whole Bible (all 66 books)</button>
+      <button class="btn btn-outline btn-sm" type="button" onclick="bibleRefreshOfflineInfo()">↻ Refresh</button>
+    </div>
+    <div id="bibleDownloadProgress" class="mt-3 text-sm text-gray-700"></div>
+  </div>
+</div>
+
+<!-- ============ STORAGE TAB (10 GB+ SERMON LIBRARY) ============ -->
+<div id="tab-store" class="tab-panel hidden">
+  <div class="card p-5 mt-4">
+    <div class="font-bold text-lg mb-1" style="color:var(--navy-dark);">🗃️ Large Sermon Library</div>
+    <div class="text-xs text-gray-500 mb-3">Sermons are kept in the browser's IndexedDB store, which holds far more than the old 5 MB limit. Read the details below.</div>
+    <div id="storePanelLine" class="text-sm text-gray-700"></div>
+    <div class="flex gap-2 flex-wrap mt-3">
+      <button class="btn btn-navy btn-sm" type="button" onclick="refreshStoragePanel()">↻ Refresh details</button>
+      <button class="btn btn-gold btn-sm" type="button" onclick="askPersistentStorage()">🔒 Ask browser to keep my sermons</button>
+      <button class="btn btn-outline btn-sm" type="button" onclick="migrateLegacyNow()">⬆ Bring in old local sermons</button>
+      <button class="btn btn-outline btn-sm" type="button" onclick="exportAllSermons()">⬇ Export all sermons</button>
+    </div>
+  </div>
+
+  <div class="card p-5 mt-4">
+    <div class="font-bold mb-2" style="color:var(--navy-dark);">Saved sermons <span id="storeCount" class="text-sm font-normal text-gray-500"></span></div>
+    <div id="storeList" class="space-y-2"></div>
+  </div>
 </div>
 
 <!-- Hidden print area -->
@@ -489,6 +674,8 @@ function switchTab(name){
   }
   if(name==='library'){ renderLibrary(); }
   if(name==='settings'){ updateStorageStats(); }
+  if(name==='bible'){ bibleTabOpened(); }
+  if(name==='store'){ refreshStoragePanel(); }
 }
 
 /* ---------- HEADER DATE ---------- */
@@ -534,7 +721,8 @@ function loadSettings(){
   document.getElementById('s_dbUrl').value = settings.dbUrl || "";
   document.getElementById('s_showPhoto').checked = settings.showPhoto;
   document.getElementById('s_geminiKey').value = settings.geminiApiKey || "";
-  document.getElementById('s_geminiModel').value = settings.geminiModel || "gemini-3.1-flash-lite";
+  populateModelSelect();
+  refreshConnectionUI();
   if(settings.photoData){ document.getElementById('s_photoPreview').src = settings.photoData; }
   else{ document.getElementById('s_photoPreview').src = DEFAULT_PHOTO_B64; }
 }
@@ -1599,6 +1787,1616 @@ function askAIBible(){
     out.innerText = "Error: " + err.message;
   });
 }
+
+</script>
+
+<script>
+/* ==== books.js ==== */
+var BIBLE_BOOKS = [
+  {nr:1, name:"Genesis"},
+  {nr:2, name:"Exodus"},
+  {nr:3, name:"Leviticus"},
+  {nr:4, name:"Numbers"},
+  {nr:5, name:"Deuteronomy"},
+  {nr:6, name:"Joshua"},
+  {nr:7, name:"Judges"},
+  {nr:8, name:"Ruth"},
+  {nr:9, name:"1 Samuel"},
+  {nr:10, name:"2 Samuel"},
+  {nr:11, name:"1 Kings"},
+  {nr:12, name:"2 Kings"},
+  {nr:13, name:"1 Chronicles"},
+  {nr:14, name:"2 Chronicles"},
+  {nr:15, name:"Ezra"},
+  {nr:16, name:"Nehemiah"},
+  {nr:17, name:"Esther"},
+  {nr:18, name:"Job"},
+  {nr:19, name:"Psalms"},
+  {nr:20, name:"Proverbs"},
+  {nr:21, name:"Ecclesiastes"},
+  {nr:22, name:"Song of Songs"},
+  {nr:23, name:"Isaiah"},
+  {nr:24, name:"Jeremiah"},
+  {nr:25, name:"Lamentations"},
+  {nr:26, name:"Ezekiel"},
+  {nr:27, name:"Daniel"},
+  {nr:28, name:"Hosea"},
+  {nr:29, name:"Joel"},
+  {nr:30, name:"Amos"},
+  {nr:31, name:"Obadiah"},
+  {nr:32, name:"Jonah"},
+  {nr:33, name:"Micah"},
+  {nr:34, name:"Nahum"},
+  {nr:35, name:"Habakkuk"},
+  {nr:36, name:"Zephaniah"},
+  {nr:37, name:"Haggai"},
+  {nr:38, name:"Zechariah"},
+  {nr:39, name:"Malachi"},
+  {nr:40, name:"Matthew"},
+  {nr:41, name:"Mark"},
+  {nr:42, name:"Luke"},
+  {nr:43, name:"John"},
+  {nr:44, name:"Acts"},
+  {nr:45, name:"Romans"},
+  {nr:46, name:"1 Corinthians"},
+  {nr:47, name:"2 Corinthians"},
+  {nr:48, name:"Galatians"},
+  {nr:49, name:"Ephesians"},
+  {nr:50, name:"Philippians"},
+  {nr:51, name:"Colossians"},
+  {nr:52, name:"1 Thessalonians"},
+  {nr:53, name:"2 Thessalonians"},
+  {nr:54, name:"1 Timothy"},
+  {nr:55, name:"2 Timothy"},
+  {nr:56, name:"Titus"},
+  {nr:57, name:"Philemon"},
+  {nr:58, name:"Hebrews"},
+  {nr:59, name:"James"},
+  {nr:60, name:"1 Peter"},
+  {nr:61, name:"2 Peter"},
+  {nr:62, name:"1 John"},
+  {nr:63, name:"2 John"},
+  {nr:64, name:"3 John"},
+  {nr:65, name:"Jude"},
+  {nr:66, name:"Revelation"}
+];
+
+</script>
+<script>
+/* ==== part1_storage.js ==== */
+/* =========================================================
+   DAILY SERMONS - UPGRADE PACK - PART 1: LARGE SERMON STORAGE
+   IndexedDB backed store (10 GB+ capable) with automatic
+   localStorage fallback so the app still saves everywhere.
+   ========================================================= */
+
+var IDB_NAME = "daily_sermons_db";
+var IDB_STORE = "sermons";
+var IDB_VER = 1;
+var storeBackend = "unavailable";
+var idbHandle = null;
+
+/* ---- IndexedDB open ---- */
+function idbOpen(){
+  return new Promise(function(resolve, reject){
+    if(typeof indexedDB === "undefined"){ reject(new Error("IndexedDB not available")); return; }
+    var req = indexedDB.open(IDB_NAME, IDB_VER);
+    req.onupgradeneeded = function(e){
+      var db = e.target.result;
+      if(!db.objectStoreNames.contains(IDB_STORE)){
+        db.createObjectStore(IDB_STORE, {keyPath:"id"});
+      }
+    };
+    req.onsuccess = function(e){ resolve(e.target.result); };
+    req.onerror = function(e){ reject(e.target.error || new Error("IndexedDB open failed")); };
+    req.onblocked = function(){ reject(new Error("IndexedDB blocked")); };
+    setTimeout(function(){ reject(new Error("IndexedDB open timed out")); }, 6000);
+  });
+}
+
+/* ---- LocalStorage fallback implementation (same API) ---- */
+function lsBackend(){
+  return {
+    name: "localStorage",
+    loadAll: function(){
+      try{ var raw = localStorage.getItem(LS_KEY); return raw ? JSON.parse(raw) : {}; }
+      catch(e){ return {}; }
+    },
+    putAll: function(obj){
+      try{ localStorage.setItem(LS_KEY, JSON.stringify(obj)); return Promise.resolve(true); }
+      catch(e){
+        alert("Storage is full. Please export a backup (Library > Export All) and delete old sermons.");
+        return Promise.resolve(false);
+      }
+    },
+    put: function(s){
+      var all = this.loadAll(); all[s.id] = s; return this.putAll(all);
+    },
+    del: function(id){
+      var all = this.loadAll(); delete all[id]; return this.putAll(all);
+    },
+    clear: function(){
+      try{ localStorage.removeItem(LS_KEY); }catch(e){}
+      return Promise.resolve(true);
+    }
+  };
+}
+
+/* ---- IndexedDB backend implementation ---- */
+function idbBackend(db){
+  function tx(mode){ return db.transaction([IDB_STORE], mode).objectStore(IDB_STORE); }
+  return {
+    name: "IndexedDB",
+    loadAll: function(){
+      return new Promise(function(resolve){
+        var out = {};
+        var os = tx("readonly");
+        var req = os.openCursor();
+        req.onsuccess = function(e){
+          var cur = e.target.result;
+          if(cur){ out[cur.value.id] = cur.value; cur.continue(); }
+          else{ resolve(out); }
+        };
+        req.onerror = function(){ resolve(out); };
+      });
+    },
+    putAll: function(obj){
+      return new Promise(function(resolve){
+        try{
+          var t = db.transaction([IDB_STORE], "readwrite");
+          var os = t.objectStore(IDB_STORE);
+          for(var k in obj){ if(Object.prototype.hasOwnProperty.call(obj,k)){ os.put(obj[k]); } }
+          t.oncomplete = function(){ resolve(true); };
+          t.onerror = function(){ resolve(false); };
+          t.onabort = function(){ resolve(false); };
+        }catch(e){ resolve(false); }
+      });
+    },
+    put: function(s){
+      return new Promise(function(resolve){
+        try{
+          var t = db.transaction([IDB_STORE], "readwrite");
+          t.objectStore(IDB_STORE).put(s);
+          t.oncomplete = function(){ resolve(true); };
+          t.onerror = function(){ resolve(false); };
+        }catch(e){ resolve(false); }
+      });
+    },
+    del: function(id){
+      return new Promise(function(resolve){
+        try{
+          var t = db.transaction([IDB_STORE], "readwrite");
+          t.objectStore(IDB_STORE).delete(id);
+          t.oncomplete = function(){ resolve(true); };
+          t.onerror = function(){ resolve(false); };
+        }catch(e){ resolve(false); }
+      });
+    },
+    clear: function(){
+      return new Promise(function(resolve){
+        try{
+          var t = db.transaction([IDB_STORE], "readwrite");
+          t.objectStore(IDB_STORE).clear();
+          t.oncomplete = function(){ resolve(true); };
+          t.onerror = function(){ resolve(false); };
+        }catch(e){ resolve(false); }
+      });
+    }
+  };
+}
+
+var Store = null;
+
+/* Boot the storage layer. Resolves to the active backend. */
+function storeInit(){
+  return idbOpen().then(function(db){
+    idbHandle = db;
+    storeBackend = "IndexedDB";
+    Store = idbBackend(db);
+    return Store.loadAll().then(function(all){
+      var count = 0; for(var k in all){ if(Object.prototype.hasOwnProperty.call(all,k)) count++; }
+      if(count === 0){
+        /* one-time migration from the old localStorage store */
+        var legacy = {};
+        try{ var raw = localStorage.getItem(LS_KEY); legacy = raw ? JSON.parse(raw) : {}; }catch(e){ legacy = {}; }
+        var n = 0; for(var j in legacy){ if(Object.prototype.hasOwnProperty.call(legacy,j)) n++; }
+        if(n > 0){
+          return Store.putAll(legacy).then(function(){
+            storeMigratedCount = n;
+            return all;
+          });
+        }
+      }
+      return all;
+    });
+  }).catch(function(){
+    /* Firefox blocks IndexedDB on file:// - fall back to localStorage */
+    storeBackend = "localStorage";
+    Store = lsBackend();
+    return Store.loadAll();
+  });
+}
+var storeMigratedCount = 0;
+
+/* Ask the browser to keep our data permanently so it is never evicted. */
+function requestPersistentStorage(){
+  try{
+    if(navigator.storage && navigator.storage.persist){
+      navigator.storage.persist().then(function(granted){ storagePersisted = !!granted; refreshStorageLine(); });
+    }
+  }catch(e){}
+}
+var storagePersisted = null;
+
+function fmtBytes(b){
+  if(!b && b !== 0) return "--";
+  var u = ["B","KB","MB","GB","TB"]; var i = 0; var n = b;
+  while(n >= 1024 && i < u.length-1){ n = n/1024; i++; }
+  return (i === 0 ? n : n.toFixed(n < 10 ? 2 : 1)) + " " + u[i];
+}
+
+var storageQuotaBytes = 0, storageUsageBytes = 0;
+
+function refreshStorageLine(){
+  var el = document.getElementById('storageStats');
+  if(!el) return;
+  var count = Object.keys(sermons).length;
+  var approx = 0;
+  for(var k in sermons){ if(Object.prototype.hasOwnProperty.call(sermons,k)){ try{ approx += JSON.stringify(sermons[k]).length; }catch(e){} } }
+
+  var quotaLine = "";
+  if(storageQuotaBytes){
+    quotaLine = "Space this browser is granting: <b>" + fmtBytes(storageQuotaBytes) + "</b> usable, "
+      + fmtBytes(storageUsageBytes) + " in use.";
+    if(storageQuotaBytes >= 10 * 1024 * 1024 * 1024){
+      quotaLine += " <b style='color:#2e7d32;'>This browser grants 10 GB or more, so the full large library is available.</b>";
+    } else {
+      quotaLine += " The library has no size limit; this figure grows as free disk space grows, and Chrome and Edge grant much more.";
+    }
+  } else {
+    quotaLine = "Browser capacity: large (capacity check not supported on this device).";
+  }
+  if(storagePersisted === true){ quotaLine += " Data marked <b>persistent</b> so it will not be cleared."; }
+
+  var warn = "";
+  if(storeBackend !== "IndexedDB"){
+    warn = "<div style='margin-top:6px;color:#b3261e;'><b>Large-library mode is off.</b> This browser blocked IndexedDB "
+      + "(common when opening the file directly with <b>file://</b> in Firefox). Sermons still save normally, but the "
+      + "5 MB limit applies. Open the app from its web link, or use Chrome/Edge, to unlock the 10 GB+ library.</div>";
+  }
+  if(storeMigratedCount > 0){
+    warn += "<div style='margin-top:6px;color:#2e7d32;'>Moved " + storeMigratedCount + " existing sermon(s) into the new large library.</div>";
+  }
+
+  el.innerHTML = "<b>" + count + "</b> sermon(s) saved. About " + fmtBytes(approx) + " of message text.<br>"
+    + "Storage engine: <b>" + storeBackend + "</b>.<br>" + quotaLine + warn;
+}
+
+function measureStorage(){
+  try{
+    if(navigator.storage && navigator.storage.estimate){
+      navigator.storage.estimate().then(function(est){
+        storageQuotaBytes = est.quota || 0;
+        storageUsageBytes = est.usage || 0;
+        refreshStorageLine();
+      }).catch(function(){});
+    }
+  }catch(e){}
+}
+
+</script>
+<script>
+/* ==== part2_bible.js ==== */
+/* =========================================================
+   DAILY SERMONS - UPGRADE PACK - PART 2: FREE API BIBLE
+   Two free, key-less Bible APIs (getbible.net + bible-api.com)
+   with a local full-Bible cache so reading and SEARCH work
+   instantly and offline once downloaded.
+   ========================================================= */
+
+var BIBLE_TRANSLATIONS = [
+  {code:"KJV",      gt:"kjv",          ba:"kjv",  name:"King James Version"},
+  {code:"WEB",      gt:"web",          ba:"web",  name:"World English Bible"},
+  {code:"ASV",      gt:"asv",          ba:"asv",  name:"American Standard Version"},
+  {code:"BBE",      gt:"basicenglish", ba:"bbe",  name:"Bible in Basic English (simple English)"},
+  {code:"AKJV",     gt:"akjv",         ba:"",     name:"American King James Version"},
+  {code:"WEBSTER",  gt:"wb",           ba:"",     name:"Webster's Bible"},
+  {code:"YLT",      gt:"ylt",          ba:"",     name:"Young's Literal Translation"},
+  {code:"WEYMOUTH", gt:"weymouth",     ba:"",     name:"Weymouth New Testament"}
+];
+
+function bibleTranslation(spec){
+  for(var i=0;i<BIBLE_TRANSLATIONS.length;i++){
+    if(BIBLE_TRANSLATIONS[i].code === spec){ return BIBLE_TRANSLATIONS[i]; }
+  }
+  return BIBLE_TRANSLATIONS[0];
+}
+
+/* ---------- Local Bible cache (separate IndexedDB) ---------- */
+var BIBLE_DB_NAME = "daily_sermons_bible";
+var BIBLE_DB_VER = 1;
+var BIBLE_STORE_TEXT = "books";
+var BIBLE_STORE_META = "meta";
+var bibleDb = null;
+
+function bibleDbOpen(){
+  return new Promise(function(resolve, reject){
+    if(typeof indexedDB === "undefined"){ reject(new Error("IndexedDB unavailable")); return; }
+    if(bibleDb){ resolve(bibleDb); return; }
+    var req = indexedDB.open(BIBLE_DB_NAME, BIBLE_DB_VER);
+    req.onupgradeneeded = function(e){
+      var db = e.target.result;
+      if(!db.objectStoreNames.contains(BIBLE_STORE_TEXT)){ db.createObjectStore(BIBLE_STORE_TEXT, {keyPath:"key"}); }
+      if(!db.objectStoreNames.contains(BIBLE_STORE_META)){ db.createObjectStore(BIBLE_STORE_META, {keyPath:"key"}); }
+    };
+    req.onsuccess = function(e){ bibleDb = e.target.result; resolve(bibleDb); };
+    req.onerror = function(){ reject(new Error("Bible cache unavailable")); };
+    setTimeout(function(){ reject(new Error("Bible cache timed out")); }, 6000);
+  });
+}
+
+function bibleCacheGet(key){
+  return bibleDbOpen().then(function(db){
+    return new Promise(function(resolve){
+      try{
+        var t = db.transaction([BIBLE_STORE_TEXT], "readonly");
+        var r = t.objectStore(BIBLE_STORE_TEXT).get(key);
+        r.onsuccess = function(){ resolve(r.result ? r.result.data : null); };
+        r.onerror = function(){ resolve(null); };
+      }catch(e){ resolve(null); }
+    });
+  }).catch(function(){ return null; });
+}
+
+function bibleCachePut(key, data){
+  return bibleDbOpen().then(function(db){
+    return new Promise(function(resolve){
+      try{
+        var t = db.transaction([BIBLE_STORE_TEXT], "readwrite");
+        t.objectStore(BIBLE_STORE_TEXT).put({key:key, data:data, savedAt:Date.now()});
+        t.oncomplete = function(){ resolve(true); };
+        t.onerror = function(){ resolve(false); };
+      }catch(e){ resolve(false); }
+    });
+  }).catch(function(){ return false; });
+}
+
+function bibleCacheCount(prefix){
+  return bibleDbOpen().then(function(db){
+    return new Promise(function(resolve){
+      try{
+        var t = db.transaction([BIBLE_STORE_TEXT], "readonly");
+        var r = t.objectStore(BIBLE_STORE_TEXT).openCursor();
+        var n = 0;
+        r.onsuccess = function(e){
+          var c = e.target.result;
+          if(c){ if(!prefix || c.value.key.indexOf(prefix) === 0){ n++; } c.continue(); }
+          else{ resolve(n); }
+        };
+        r.onerror = function(){ resolve(0); };
+      }catch(e){ resolve(0); }
+    });
+  }).catch(function(){ return 0; });
+}
+
+function bibleCacheClear(){
+  return bibleDbOpen().then(function(db){
+    return new Promise(function(resolve){
+      try{
+        var t = db.transaction([BIBLE_STORE_TEXT], "readwrite");
+        t.objectStore(BIBLE_STORE_TEXT).clear();
+        t.oncomplete = function(){ resolve(true); };
+        t.onerror = function(){ resolve(false); };
+      }catch(e){ resolve(false); }
+    });
+  }).catch(function(){ return false; });
+}
+
+/* ---------- Fetching ---------- */
+function fetchJson(url, timeoutMs){
+  return new Promise(function(resolve, reject){
+    var done = false;
+    var timer = setTimeout(function(){
+      if(!done){ done = true; reject(new Error("The Bible server took too long. Please check your internet and try again.")); }
+    }, timeoutMs || 30000);
+    fetch(url).then(function(r){
+      return r.json();
+    }).then(function(data){
+      if(!done){ done = true; clearTimeout(timer); resolve(data); }
+    }).catch(function(err){
+      if(!done){ done = true; clearTimeout(timer); reject(new Error("Could not reach the Bible server (no internet?). " + (err && err.message ? err.message : ""))); }
+    });
+  });
+}
+
+/* Load one chapter. Uses cache first, then the free API. */
+function bibleLoadChapter(transCode, bookNr, chapter, forceNetwork){
+  var tr = bibleTranslation(transCode);
+  var key = tr.code + ":" + bookNr + ":" + chapter;
+  var cachedFirst = forceNetwork ? Promise.resolve(null) : bibleCacheGet(key);
+  return cachedFirst.then(function(hit){
+    if(hit){ hit.fromCache = true; return hit; }
+    var url = "https://api.getbible.net/v2/" + encodeURIComponent(tr.gt) + "/" + bookNr + "/" + chapter + ".json";
+    return fetchJson(url, 35000).then(function(d){
+      if(!d || !d.verses){ throw new Error("That chapter was not found in " + tr.name + "."); }
+      var out = {
+        translation: tr.code,
+        bookName: d.book_name,
+        bookNr: d.book_nr,
+        chapter: d.chapter,
+        verses: d.verses.map(function(v){ return {verse:v.verse, text:v.text}; })
+      };
+      bibleCachePut(key, out);
+      return out;
+    });
+  }).catch(function(err){
+    /* offline / failure -> serve cache if we have it */
+    return bibleCacheGet(key).then(function(hit){
+      if(hit){ hit.fromCache = true; return hit; }
+      throw err;
+    });
+  });
+}
+
+/* Load a whole book (all chapters). Cached for offline use and search. */
+function bibleLoadBook(transCode, bookNr, onProgress){
+  var tr = bibleTranslation(transCode);
+  var key = tr.code + ":BOOK:" + bookNr;
+  return bibleCacheGet(key).then(function(hit){
+    if(hit){ if(onProgress){ onProgress(1,1); } return hit; }
+    var url = "https://api.getbible.net/v2/" + encodeURIComponent(tr.gt) + "/" + bookNr + ".json";
+    return fetchJson(url, 60000).then(function(d){
+      if(!d || !d.chapters){ throw new Error("That book was not found in " + tr.name + "."); }
+      var out = {
+        translation: tr.code,
+        bookName: d.name,
+        bookNr: d.nr,
+        chapters: d.chapters.map(function(ch){
+          return {
+            chapter: ch.chapter,
+            verses: (ch.verses||[]).map(function(v){ return {verse:v.verse, text:v.text}; })
+          };
+        })
+      };
+      bibleCachePut(key, out);
+      if(onProgress){ onProgress(1,1); }
+      return out;
+    });
+  });
+}
+
+/* Download the WHOLE Bible (all 66 books) so search works offline. */
+var bibleDownloadRunning = false;
+function bibleDownloadWhole(transCode, onTick){
+  if(bibleDownloadRunning){ return Promise.reject(new Error("A download is already running.")); }
+  bibleDownloadRunning = true;
+  var tr = bibleTranslation(transCode);
+  var done = 0;
+  var total = BIBLE_BOOKS.length;
+  var chain = Promise.resolve();
+  BIBLE_BOOKS.forEach(function(b){
+    chain = chain.then(function(){
+      return bibleLoadBook(tr.code, b.nr).then(function(){
+        done++;
+        if(onTick){ onTick(done, total, b.name); }
+      }).catch(function(){
+        done++;
+        if(onTick){ onTick(done, total, b.name + " (skipped)"); }
+      });
+    });
+  });
+  return chain.then(function(){
+    bibleDownloadRunning = false;
+    return {books: done, total: total};
+  }).catch(function(e){
+    bibleDownloadRunning = false;
+    throw e;
+  });
+}
+
+/* ---------- Reference parsing (John 3:16, 1 Cor 13:4-7, Psalms 23) ---------- */
+var BIBLE_BOOK_ALIASES = (function(){
+  var a = {};
+  BIBLE_BOOKS.forEach(function(b){
+    a[b.name.toLowerCase()] = b.nr;
+    a[b.name.toLowerCase().replace(/\s+/g,"")] = b.nr;
+  });
+  var extra = {
+    "psalm":19,"psalms":19,"ps":19,"song of solomon":22,"song of songs":22,"canticles":22,
+    "1 samuel":9,"2 samuel":10,"1 kings":11,"2 kings":12,"1 chronicles":13,"2 chronicles":14,
+    "1 corinthians":46,"2 corinthians":47,"1 thessalonians":52,"2 thessalonians":53,
+    "1 timothy":54,"2 timothy":55,"1 peter":60,"2 peter":61,"1 john":62,"2 john":63,"3 john":64,
+    "revelations":66,"rev":66,"jhn":43,"jn":43,"rom":45,"romans":45,"gal":48,"eph":49,
+    "phil":50,"philippians":50,"col":51,"colossians":51,"heb":58,"hebrews":58,"jas":59,"james":59,
+    "mat":40,"matt":40,"matthew":40,"mk":41,"mark":41,"lk":42,"luke":42,"act":44,"acts":44,
+    "gen":1,"ex":2,"exod":2,"lev":3,"num":4,"deut":5,"josh":6,"judg":7,"prov":20,"eccl":21,
+    "isa":23,"jer":24,"lam":25,"ezek":26,"dan":27,"hos":28,"obad":31,"mic":33,"hab":35,
+    "zeph":36,"hag":37,"zech":38,"mal":39,"neh":16,"est":17
+  };
+  for(var k in extra){ if(!a[k]){ a[k] = extra[k]; } }
+  return a;
+})();
+
+function bibleParseReference(ref){
+  if(!ref) return null;
+  var s = String(ref).toLowerCase().replace(/\./g,"").replace(/\s+/g," ").trim();
+  var m = s.match(/^([1-3]?\s*[a-z][a-z ]*?)\s*(\d+)?(?:\s*:\s*(\d+))?(?:\s*-\s*(\d+))?\s*$/);
+  if(!m) return null;
+  var name = (m[1]||"").trim();
+  var bookNr = BIBLE_BOOK_ALIASES[name] || BIBLE_BOOK_ALIASES[name.replace(/\s+/g,"")];
+  if(!bookNr) return null;
+  return {
+    bookNr: bookNr,
+    chapter: m[2] ? parseInt(m[2],10) : 1,
+    verseStart: m[3] ? parseInt(m[3],10) : null,
+    verseEnd: m[4] ? parseInt(m[4],10) : null
+  };
+}
+
+/* Fetch a reference - tries bible-api.com (handles ranges), then local cache. */
+function bibleFetchReference(ref, transCode){
+  var tr = bibleTranslation(transCode);
+  var parsed = bibleParseReference(ref);
+  var ba = tr.ba;
+  if(ba){
+    var clean = String(ref).trim().replace(/\s+/g, " ");
+    var url = "https://bible-api.com/" + encodeURIComponent(clean) + "?translation=" + encodeURIComponent(ba);
+    return fetchJson(url, 25000).then(function(d){
+      if(d && d.text && !d.error){
+        return {reference: d.reference, text: d.text.replace(/\s+/g," ").trim(), translation: tr.code, source:"bible-api.com"};
+      }
+      throw new Error("not found");
+    }).catch(function(){
+      return bibleReferenceFromCache(parsed, tr);
+    });
+  }
+  return bibleReferenceFromCache(parsed, tr);
+}
+
+function bibleReferenceFromCache(parsed, tr){
+  if(!parsed){ return Promise.reject(new Error("Could not read that reference. Try a format like John 3:16, or Psalms 23.")); }
+  return bibleLoadChapter(tr.code, parsed.bookNr, parsed.chapter).then(function(ch){
+    var vs = ch.verses;
+    var picked;
+    if(parsed.verseStart){
+      var end = parsed.verseEnd || parsed.verseStart;
+      picked = vs.filter(function(v){ return v.verse >= parsed.verseStart && v.verse <= end; });
+    } else {
+      picked = vs;
+    }
+    if(!picked.length){ throw new Error("That verse was not found."); }
+    var label = ch.bookName + " " + parsed.chapter + (parsed.verseStart ? ":" + parsed.verseStart + (parsed.verseEnd && parsed.verseEnd!==parsed.verseStart ? "-"+parsed.verseEnd : "") : "");
+    return {
+      reference: label,
+      text: picked.map(function(v){ return v.text; }).join(" ").replace(/\s+/g," ").trim(),
+      translation: tr.code,
+      source: "getbible.net"
+    };
+  });
+}
+
+/* ---------- Search ---------- */
+/* Searches every chapter of the chosen translation that is on the device.
+   If the whole Bible has been downloaded this searches all 31,102 verses. */
+function bibleSearchVerses(transCode, query, limit){
+  var tr = bibleTranslation(transCode);
+  var q = String(query||"").trim().toLowerCase();
+  if(q.length < 3){ return Promise.reject(new Error("Please type at least 3 letters to search.")); }
+  limit = limit || 300;
+  return bibleDbOpen().then(function(db){
+    return new Promise(function(resolve){
+      var results = [];
+      var seenKeys = {};
+      var t = db.transaction([BIBLE_STORE_TEXT], "readonly");
+      var req = t.objectStore(BIBLE_STORE_TEXT).openCursor();
+      req.onsuccess = function(e){
+        var cur = e.target.result;
+        if(!cur){
+          resolve(results.sort(function(a,b){ return a.bookNr - b.bookNr || a.chapter - b.chapter || a.verse - b.verse; }));
+          return;
+        }
+        var rec = cur.value;
+        if(rec.key.indexOf(tr.code + ":") === 0 && rec.key.indexOf(":BOOK:") === -1){
+          var data = rec.data;
+          if(data && data.verses){
+            for(var i=0;i<data.verses.length;i++){
+              var v = data.verses[i];
+              if(String(v.text).toLowerCase().indexOf(q) !== -1 && results.length < limit){
+                var k = data.bookNr + ":" + data.chapter + ":" + v.verse;
+                if(!seenKeys[k]){
+                  seenKeys[k] = 1;
+                  results.push({
+                    bookNr: data.bookNr, bookName: data.bookName,
+                    chapter: data.chapter, verse: v.verse, text: v.text
+                  });
+                }
+              }
+            }
+          }
+        }
+        cur.continue();
+      };
+      req.onerror = function(){ resolve([]); };
+    });
+  }).catch(function(){ return []; });
+}
+
+function bibleCountCachedChapters(transCode){
+  var tr = bibleTranslation(transCode);
+  return bibleCacheCount(tr.code + ":");
+}
+
+/* Bible reading plan / book picker helpers */
+function bibleBookName(nr){
+  for(var i=0;i<BIBLE_BOOKS.length;i++){ if(BIBLE_BOOKS[i].nr === nr){ return BIBLE_BOOKS[i].name; } }
+  return "Book " + nr;
+}
+
+</script>
+<script>
+/* ==== part3_ai.js ==== */
+/* =========================================================
+   DAILY SERMONS - UPGRADE PACK - PART 3: BIBLE AI ENGINE
+   - Sermons written in SIMPLE, BASIC English for villagers
+   - Every sermon built on the five required foundations
+   - AI Model dropdown (5 models), saved key, show/hide, status
+   ========================================================= */
+
+/* ---------- Available AI models ---------- */
+var AI_MODELS = [
+  {id:"gemini-2.5-flash-lite", label:"2.5 Flash Lite",  note:"fast and light"},
+  {id:"gemini-3.5-flash-lite", label:"3.5 Flash Lite",  note:"newer, light"},
+  {id:"gemini-3.6-flash",      label:"3.6 Flash",       note:"balanced"},
+  {id:"gemini-3.7-flash",      label:"3.7 Flash",       note:"stronger"},
+  {id:"gemini-3.8-flash",      label:"3.8 Flash",       note:"newest, strongest"}
+];
+var AI_FALLBACK_MODEL = "gemini-2.5-flash-lite";
+
+/* ---------- Simple-English rule book shared by all AI writing ---------- */
+var SIMPLE_ENGLISH_RULES =
+  "\n\nWRITE IN SIMPLE, BASIC ENGLISH. The readers and hearers are village people, and many are not highly educated.\n" +
+  "HOW TO WRITE:\n" +
+  "- Use short sentences. Keep most sentences under 14 words.\n" +
+  "- Use everyday words that a village farmer or market woman already knows. Say 'God loves you', not 'the Almighty bestows His benevolence'.\n" +
+  "- If you must use a big church word, explain it at once in simple words in brackets. Example: 'repentance (being truly sorry and turning away from sin)'.\n" +
+  "- Do not use long formal words: avoid 'therefore', 'henceforth', 'moreover', 'notwithstanding', 'hereby', 'aforementioned', 'utilise'.\n" +
+  "- Use active voice. Say 'Jesus healed the man', not 'the man was healed by Jesus'.\n" +
+  "- Prefer short examples from daily life: farming, water, walking, family, hunger, light in the dark, a door, a shepherd and his sheep, a seed, a road.\n" +
+  "- Explain each Bible word the first time you use it.\n" +
+  "- Be warm, clear and encouraging. Write so that a child of ten and an old grandmother can both follow.\n" +
+  "- Never use markdown symbols such as ** or #. Never use dashes as bullet marks inside sentences.";
+
+/* ---------- The five foundations every sermon must carry ---------- */
+var SERMON_FOUNDATIONS =
+  "\n\nEVERY SERMON MUST BE BUILT ON THESE FIVE FOUNDATIONS. Cover all five, and make each one plain in the sermon:\n" +
+  "1. BIBLICAL FOUNDATIONS - the main scripture truth. Show where it comes from in the Bible and what God says about it.\n" +
+  "2. BIBLICAL TYPOLOGY - shadows and pictures in the Old Testament that point to Jesus. Example: the Passover lamb, the bronze snake lifted up, manna, the rock that gave water. Explain the picture in simple words.\n" +
+  "3. THE LIFE OF CHRIST - what Jesus said, did, suffered, and how He rose again, and how it touches this topic.\n" +
+  "4. THE LIFE OF THE BELIEVER - how the hearer must live it out day by day: what to believe, what to stop doing, what to start doing, how to pray.\n" +
+  "5. THE LIFE OF THE CHURCH - what the church together must do: love one another, share the gospel, baptism, the Lord's Supper, prayer, giving, and serving the community.\n" +
+  "Structure the main points so that these five foundations are clearly shown, in this order, each named inside the point.";
+
+/* ---------- Model dropdown ---------- */
+function populateModelSelect(){
+  var sel = document.getElementById('s_geminiModel');
+  if(!sel) return;
+  sel.innerHTML = "";
+  for(var i=0;i<AI_MODELS.length;i++){
+    var o = document.createElement('option');
+    o.value = AI_MODELS[i].id;
+    o.text = AI_MODELS[i].label + "  (" + AI_MODELS[i].note + ")";
+    sel.appendChild(o);
+  }
+  /* keep an older saved model usable instead of silently dropping it */
+  var saved = settings.geminiModel || "";
+  var known = false;
+  for(var j=0;j<AI_MODELS.length;j++){ if(AI_MODELS[j].id === saved){ known = true; } }
+  if(saved && !known){
+    var o2 = document.createElement('option');
+    o2.value = saved;
+    o2.text = saved + "  (previously saved)";
+    sel.appendChild(o2);
+  }
+  sel.value = known ? saved : (saved ? saved : AI_MODELS[0].id);
+}
+
+function currentModelLabel(){
+  var id = settings.geminiModel || AI_MODELS[0].id;
+  for(var i=0;i<AI_MODELS.length;i++){ if(AI_MODELS[i].id === id){ return AI_MODELS[i].label; } }
+  return id;
+}
+
+/* ---------- API key: save / mask / show / hide / connection ---------- */
+function maskKey(k){
+  if(!k) return "";
+  if(k.length <= 10){ return k.charAt(0) + "••••" + k.charAt(k.length-1); }
+  return k.substring(0,6) + "••••••••" + k.substring(k.length-4);
+}
+
+function toggleKeyVisibility(){
+  var inp = document.getElementById('s_geminiKey');
+  var btn = document.getElementById('keyToggleBtn');
+  if(!inp) return;
+  var showing = inp.getAttribute('type') === 'text';
+  if(showing){
+    inp.setAttribute('type','password');
+    if(btn){ btn.innerText = "Show"; }
+  } else {
+    inp.setAttribute('type','text');
+    if(btn){ btn.innerText = "Hide"; }
+  }
+  var info = document.getElementById('keySavedInfo');
+  if(info){
+    if(!showing && settings.geminiApiKey){
+      info.innerHTML = "Saved key: <b>" + escapeHtml(maskKey(settings.geminiApiKey)) + "</b> (hidden)";
+    }
+  }
+}
+
+function saveApiKeyOnly(){
+  var inp = document.getElementById('s_geminiKey');
+  if(!inp) return;
+  var v = inp.value.trim();
+  settings.geminiApiKey = v;
+  localStorage.setItem(LS_SETTINGS, JSON.stringify(settings));
+  var info = document.getElementById('keySavedInfo');
+  if(info){
+    if(v){
+      info.innerHTML = "Key saved on this device: <b>" + escapeHtml(maskKey(v)) + "</b>. It is hidden until you press Show.";
+    } else {
+      info.innerHTML = "No key saved yet.";
+    }
+  }
+  inp.setAttribute('type','password');
+  var btn = document.getElementById('keyToggleBtn');
+  if(btn){ btn.innerText = "Show"; }
+  setConnectionStatus('unknown', v ? "Key saved. Press Test to check the connection." : "No API key saved yet.");
+}
+
+/* NOTE: this drives ONLY the AI connection badge (#aiStatus / #aiHeaderStatus).
+   The header #connStatus badge belongs to Firebase cloud sync and is left alone. */
+function setConnectionStatus(state, msg){
+  var label, colour;
+  if(state === 'ok'){ label = "● AI Connected"; colour = "#2e7d32"; }
+  else if(state === 'fail'){ label = "● AI Not Connected"; colour = "#b3261e"; }
+  else if(state === 'working'){ label = "● Checking…"; colour = "#c77700"; }
+  else { label = "● AI Not checked"; colour = "#5a6b80"; }
+
+  var ids = ['aiStatus','aiHeaderStatus'];
+  for(var i=0;i<ids.length;i++){
+    var el = document.getElementById(ids[i]);
+    if(el){ el.innerText = label; el.style.background = colour; el.title = msg || ""; }
+  }
+  var line = document.getElementById('aiConnLine');
+  if(line && msg){ line.innerText = msg; }
+}
+
+function refreshConnectionUI(){
+  var has = !!(settings.geminiApiKey && String(settings.geminiApiKey).trim());
+  var info = document.getElementById('keySavedInfo');
+  if(info){
+    info.innerHTML = has
+      ? "Saved key: <b>" + escapeHtml(maskKey(settings.geminiApiKey)) + "</b> (hidden)"
+      : "No key saved yet.";
+  }
+  if(!has){
+    setConnectionStatus('unknown', "No API key saved yet. Paste your Gemini API key and press Save key.");
+  } else {
+    var line = document.getElementById('aiConnLine');
+    var lbl = currentModelLabel();
+    if(line && !String(line.innerText||"").trim()){
+      line.innerText = "Using " + lbl + ". Press Test connection to check it.";
+    }
+    var st = document.getElementById('aiStatus');
+    if(st && String(st.innerText).indexOf("checked") !== -1){
+      setConnectionStatus('unknown', "Key saved (" + maskKey(settings.geminiApiKey) + "). Press Test connection to check the AI.");
+    }
+  }
+  var ml = document.getElementById('aiModelLabel');
+  if(ml){ ml.innerText = currentModelLabel(); }
+  var mf = document.getElementById('aiModelLabelFoot');
+  if(mf){ mf.innerText = currentModelLabel(); }
+}
+
+/* Live connection test against the chosen model. */
+function testAIConnection(){
+  setConnectionStatus('working', "Checking the connection…");
+  if(!settings.geminiApiKey){
+    setConnectionStatus('fail', "No API key saved. Paste your Gemini API key and press Save key first.");
+    return Promise.resolve(false);
+  }
+  var model = settings.geminiModel || AI_MODELS[0].id;
+  var url = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model)
+          + ":generateContent?key=" + encodeURIComponent(settings.geminiApiKey);
+  return fetch(url, {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ contents:[{ parts:[{ text:"Reply with the single word: OK" }] }] })
+  }).then(function(r){ return r.json(); }).then(function(data){
+    if(data && data.error){
+      var m = data.error.message || "API error";
+      if(String(m).toLowerCase().indexOf("not found") !== -1 || String(m).toLowerCase().indexOf("not supported") !== -1){
+        setConnectionStatus('fail', "The model \"" + currentModelLabel() + "\" is not available on your API key. Please choose another model in the list. (" + m + ")");
+      } else if(String(m).toLowerCase().indexOf("api key") !== -1){
+        setConnectionStatus('fail', "Your API key was refused. Please check the key. (" + m + ")");
+      } else {
+        setConnectionStatus('fail', "Connection failed: " + m);
+      }
+      return false;
+    }
+    var ok = !!(data && data.candidates && data.candidates.length);
+    if(ok){
+      setConnectionStatus('ok', "Connected. Using " + currentModelLabel() + ".");
+    } else {
+      setConnectionStatus('fail', "The AI answered with an unexpected reply. Please try again.");
+    }
+    return ok;
+  }).catch(function(err){
+    setConnectionStatus('fail', "Could not reach the AI. Check your internet. (" + (err && err.message ? err.message : "network error") + ")");
+    return false;
+  });
+}
+
+/* ---------- Core Gemini call (with automatic model fallback) ---------- */
+function callGeminiModel(model, promptText){
+  var url = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model)
+          + ":generateContent?key=" + encodeURIComponent(settings.geminiApiKey);
+  return fetch(url, {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({
+      contents:[{ parts:[{ text: promptText }] }],
+      generationConfig:{ temperature:0.7, maxOutputTokens: 8192 }
+    })
+  }).then(function(r){ return r.json(); }).then(function(data){
+    if(data && data.error){
+      var e = new Error(data.error.message || "AI error");
+      e.apiMessage = data.error.message || "";
+      e.code = data.error.code;
+      throw e;
+    }
+    var cand = data.candidates && data.candidates[0];
+    var text = cand && cand.content && cand.content.parts && cand.content.parts[0] ? cand.content.parts[0].text : "";
+    if(!text){
+      var reason = cand && cand.finishReason ? cand.finishReason : "unknown";
+      throw new Error("The AI returned an empty answer (" + reason + "). Please try again.");
+    }
+    return text;
+  });
+}
+
+function callGeminiRaw(promptText){
+  if(!settings.geminiApiKey){
+    return Promise.reject(new Error("No API key yet. Open Settings, paste your Gemini API key, then press Save key."));
+  }
+  var model = settings.geminiModel || AI_MODELS[0].id;
+  return callGeminiModel(model, promptText).catch(function(err){
+    var m = String(err.apiMessage || err.message || "").toLowerCase();
+    var looksMissing = m.indexOf("not found") !== -1 || m.indexOf("not supported") !== -1 || m.indexOf("does not exist") !== -1;
+    if(looksMissing && model !== AI_FALLBACK_MODEL){
+      /* the chosen model is not on this key - quietly use a working one */
+      return callGeminiModel(AI_FALLBACK_MODEL, promptText).then(function(text){
+        var note = "Note: \"" + model + "\" is not available on your API key, so " + AI_FALLBACK_MODEL + " was used instead. Change the model in Settings if you wish.";
+        var line = document.getElementById('aiConnLine');
+        if(line){ line.innerText = note; }
+        setConnectionStatus('ok', note);
+        return text;
+      });
+    }
+    throw err;
+  });
+}
+
+/* ---------- Shared sermon-writing instruction block ---------- */
+function sermonWritingStandard(topic){
+  return "You are a sound, Bible-based sermon writer for " + settings.ministryName + " (Apostle Frank Tembo). "
+    + "You write sermons that ordinary village people can follow easily. "
+    + "Given the topic or Bible book: \"" + topic + "\"." + SIMPLE_ENGLISH_RULES + SERMON_FOUNDATIONS + "\n"
+    + "Also: only ever give scripture REFERENCES such as John 3:16. Never write out the full wording of a verse, "
+    + "because the exact wording must be checked separately.";
+}
+
+</script>
+<script>
+/* ==== part4_ui.js ==== */
+/* =========================================================
+   DAILY SERMONS - UPGRADE PACK - PART 4: UI + OVERRIDES
+   Bible tab, Storage tab, AI chat upgrades, and the
+   storage-backed save/delete/clear + large-library stats.
+   ========================================================= */
+
+/* ---------- chapter counts (KJV order, books 1..66) ---------- */
+var BIBLE_CHAPTER_COUNTS = [50,40,27,36,34,24,21,4,31,24,22,25,29,36,10,13,10,42,150,31,12,8,66,52,5,
+  48,12,14,3,9,1,4,7,3,3,3,2,14,4,28,16,24,21,28,16,16,13,6,6,4,4,5,3,6,4,3,1,13,5,5,3,5,1,1,1,22];
+
+/* =========================================================
+   STORAGE-BACKED SAVE / DELETE / CLEAR (overrides)
+   ========================================================= */
+function saveLocalSermons(){
+  if(!Store){ updateStorageStats(); return; }
+  var ids = Object.keys(sermons);
+  if(ids.length === 0){
+    Store.clear().then(function(){ updateStorageStats(); refreshStoragePanel(); });
+    return;
+  }
+  Store.putAll(sermons).then(function(){
+    updateStorageStats();
+    refreshStoragePanel();
+  });
+}
+
+function deleteSermon(id){
+  if(!confirm("Delete this sermon permanently?")) return;
+  delete sermons[id];
+  if(Store){
+    Store.loadAll().then(function(all){
+      return Store.putAll(sermons);
+    }).then(function(){
+      updateStorageStats(); refreshStoragePanel();
+    });
+  }
+  deleteFromFirebase(id);
+  renderLibrary();
+  if(currentPreviewId === id){ loadToday(); }
+}
+
+function clearAllSermons(){
+  if(!confirm("This will delete ALL sermons from this device. Export a backup first! Continue?")) return;
+  if(!confirm("Are you absolutely sure? This cannot be undone.")) return;
+  sermons = {};
+  if(Store){ Store.clear().then(function(){ updateStorageStats(); refreshStoragePanel(); }); }
+  renderLibrary();
+  document.getElementById('previewBody').innerHTML = "<div class='text-gray-400 text-center py-10'>No sermons yet.</div>";
+}
+
+function updateStorageStats(){
+  refreshStorageLine();
+}
+
+/* =========================================================
+   STORAGE TAB
+   ========================================================= */
+function refreshStoragePanel(){
+  refreshStoreList();
+  var el = document.getElementById('storePanelLine');
+  if(!el) return;
+  if(!Store){ el.innerHTML = "Storage is still starting. Please wait a moment."; return; }
+  var count = Object.keys(sermons).length;
+  var approx = 0;
+  for(var k in sermons){ if(Object.prototype.hasOwnProperty.call(sermons,k)){ try{ approx += JSON.stringify(sermons[k]).length; }catch(e){} } }
+  var big = (storageQuotaBytes >= 10 * 1024 * 1024 * 1024);
+  el.innerHTML =
+    "Storage engine: <b>" + storeBackend + "</b><br>" +
+    "Sermons saved: <b>" + count + "</b> &middot; about <b>" + fmtBytes(approx) + "</b> of message text<br>" +
+    (storageQuotaBytes
+      ? "Space this browser is granting right now: <b>" + fmtBytes(storageQuotaBytes) + "</b> &middot; " + fmtBytes(storageUsageBytes) + " in use"
+        + (big
+          ? " &middot; <b style='color:#2e7d32;'>This browser is granting 10 GB or more.</b>"
+          : " &middot; <b>This browser is granting under 10 GB at the moment.</b> The library itself has no size limit. The figure grows as free disk space grows, and it is usually far larger once the app has been opened from its web link a few times. Chrome and Edge grant much more than Firefox or Safari.")
+      : "Space available: could not be measured on this device.") +
+    "<br><span class='text-gray-500'>The library is built for a 10 GB or more sermon collection. Sermons are plain text, so 10 GB holds roughly 100,000 full sermons, and there is no limit on how many you may save.</span>" +
+    (storagePersisted === true ? "<br>Data marked <b>persistent</b> so the browser will not clear it." :
+     storagePersisted === false ? "<br>Not yet persistent \u2014 press <b>Ask browser to keep my sermons</b>." : "") +
+    (storeBackend === "IndexedDB"
+      ? "<br><span style='color:#2e7d32;'>Large-library mode is ON.</span> This store is meant for a very large sermon library, far beyond 10 GB of text."
+      : "<br><span style='color:#b3261e;'>Large-library mode is OFF</span> because this browser blocked IndexedDB (often Firefox on file://). Open the app from its web link, or use Chrome or Edge.");
+
+  if(storeBackend === "localStorage"){
+    el.innerHTML += "<br><span class='text-gray-500'>Tip: your sermons still save normally on this device, but the small 5 MB limit applies until the large store is available.</span>";
+  }
+}
+
+function refreshStoreList(){
+  var host = document.getElementById('storeList');
+  if(!host) return;
+  host.innerHTML = "";
+  var arr = sortedSermons().reverse();
+  document.getElementById('storeCount').innerText = "(" + arr.length + ")";
+  if(!arr.length){
+    host.innerHTML = "<div class='text-gray-400 text-sm'>No sermons saved yet. Create one in the Editor tab.</div>";
+    return;
+  }
+  for(var i=0;i<arr.length;i++){
+    var s = arr[i];
+    var row = document.createElement('div');
+    row.className = "flex items-center justify-between border rounded-lg p-3 flex-wrap gap-2";
+    row.style.borderColor = "#e5e0d0";
+    var size = 0;
+    try{ size = JSON.stringify(s).length; }catch(e){ size = 0; }
+    var left = document.createElement('div');
+    left.innerHTML = "<div class='font-bold' style='color:var(--navy-dark);'>" + escapeHtml(s.title) + "</div>"
+      + "<div class='text-xs text-gray-500'>" + s.date + " &middot; " + escapeHtml(s.preacher) + " &middot; "
+      + (s.mainMessage ? s.mainMessage.type : "") + " &middot; " + fmtBytes(size) + "</div>";
+    var right = document.createElement('div');
+    right.className = "flex gap-1 flex-wrap";
+    right.appendChild(mkBtn("View", function(id){ return function(){ currentPreviewId=id; switchTab('preview'); renderPreview(id); }; }(s.id)));
+    right.appendChild(mkBtn("Delete", function(id){ return function(){ deleteSermon(id); }; }(s.id), "btn-danger"));
+    row.appendChild(left); row.appendChild(right);
+    host.appendChild(row);
+  }
+}
+
+function askPersistentStorage(){
+  if(!(navigator.storage && navigator.storage.persist)){
+    alert("This browser cannot be asked to keep data permanently. Keeping a regular backup with Export All is recommended.");
+    return;
+  }
+  navigator.storage.persist().then(function(granted){
+    storagePersisted = !!granted;
+    alert(granted
+      ? "Good news. The browser has agreed to keep your sermons and not clear them."
+      : "The browser did not grant this yet. Your sermons are still saved. It usually grants this once the app is used a few times.");
+    refreshStoragePanel();
+  }).catch(function(){
+    alert("Could not ask the browser to keep the data. Your sermons are still saved normally.");
+  });
+}
+
+function migrateLegacyNow(){
+  var legacy = {};
+  try{ var raw = localStorage.getItem(LS_KEY); legacy = raw ? JSON.parse(raw) : {}; }catch(e){ legacy = {}; }
+  var n = 0; for(var k in legacy){ if(Object.prototype.hasOwnProperty.call(legacy,k)){ n++; } }
+  if(!n){ alert("No older local sermons were found. Everything is already in the large library."); return; }
+  if(!Store){ alert("Storage is still starting. Please try again in a moment."); return; }
+  var merged = sermons;
+  for(var id in legacy){ if(Object.prototype.hasOwnProperty.call(legacy,id)){ if(!merged[id]){ merged[id] = legacy[id]; } } }
+  sermons = merged;
+  Store.putAll(sermons).then(function(){
+    alert("Brought in " + n + " older sermon(s).");
+    renderLibrary(); refreshStoragePanel(); updateStorageStats();
+  });
+}
+
+/* =========================================================
+   FREE API BIBLE TAB
+   ========================================================= */
+function populateBibleSelects(){
+  var tsel = document.getElementById('bibleTrans');
+  if(tsel){
+    tsel.innerHTML = "";
+    for(var i=0;i<BIBLE_TRANSLATIONS.length;i++){
+      var o = document.createElement('option');
+      o.value = BIBLE_TRANSLATIONS[i].code;
+      o.text = BIBLE_TRANSLATIONS[i].code + " - " + BIBLE_TRANSLATIONS[i].name;
+      tsel.appendChild(o);
+    }
+    tsel.value = settings.bibleTranslation || "KJV";
+  }
+  var bsel = document.getElementById('bibleBook');
+  if(bsel){
+    bsel.innerHTML = "";
+    for(var j=0;j<BIBLE_BOOKS.length;j++){
+      var ob = document.createElement('option');
+      ob.value = BIBLE_BOOKS[j].nr;
+      ob.text = BIBLE_BOOKS[j].name;
+      bsel.appendChild(ob);
+    }
+    bsel.value = settings.bibleBook || 43;
+  }
+  populateBibleChapters();
+}
+
+function populateBibleChapters(){
+  var bsel = document.getElementById('bibleBook');
+  var csel = document.getElementById('bibleChapter');
+  if(!bsel || !csel) return;
+  var nr = parseInt(bsel.value, 10) || 1;
+  var total = BIBLE_CHAPTER_COUNTS[nr-1] || 1;
+  csel.innerHTML = "";
+  for(var c=1;c<=total;c++){
+    var o = document.createElement('option');
+    o.value = c; o.text = "Chapter " + c;
+    csel.appendChild(o);
+  }
+}
+
+function onBibleTransChanged(){
+  settings.bibleTranslation = document.getElementById('bibleTrans').value;
+  try{ localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); }catch(e){}
+  bibleRefreshOfflineInfo();
+  loadBibleChapterUI();
+}
+
+function onBibleBookChanged(){
+  populateBibleChapters();
+  loadBibleChapterUI();
+}
+
+function bibleSetStatus(txt){
+  var el = document.getElementById('bibleStatus');
+  if(el){ el.innerText = txt || ""; }
+}
+
+function loadBibleChapterUI(forceNetwork){
+  var tsel = document.getElementById('bibleTrans');
+  var bsel = document.getElementById('bibleBook');
+  var csel = document.getElementById('bibleChapter');
+  if(!tsel || !bsel || !csel) return;
+  var trans = tsel.value;
+  var bookNr = parseInt(bsel.value, 10) || 1;
+  var chap = parseInt(csel.value, 10) || 1;
+  settings.bibleBook = bookNr;
+  settings.bibleChapter = chap;
+  try{ localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); }catch(e){}
+  var host = document.getElementById('bibleReader');
+  host.innerHTML = "<div class='text-gray-500 text-sm'>Loading " + escapeHtml(bibleBookName(bookNr)) + " " + chap + " \u2026</div>";
+  bibleSetStatus("Loading\u2026");
+  bibleLoadChapter(trans, bookNr, chap, forceNetwork).then(function(ch){
+    renderBibleChapter(ch);
+    bibleSetStatus((ch.fromCache ? "From this device (offline copy)" : "Downloaded from the free Bible API") + " \u00b7 " + ch.verses.length + " verses");
+  }).catch(function(err){
+    host.innerHTML = "<div style='color:#b3261e;' class='text-sm'>" + escapeHtml(err.message) + "</div>"
+      + "<div class='text-xs text-gray-500 mt-2'>Check your internet connection and try again.</div>";
+    bibleSetStatus("Failed");
+  });
+}
+
+function renderBibleChapter(ch){
+  var host = document.getElementById('bibleReader');
+  var h = "<h3>" + escapeHtml(ch.bookName) + " " + ch.chapter + "</h3>";
+  h += "<div class='text-xs text-gray-500 mb-3'>" + escapeHtml(ch.translation) + "</div>";
+  for(var i=0;i<ch.verses.length;i++){
+    var v = ch.verses[i];
+    h += "<p class='bible-verse'><span class='vnum'>" + v.verse + "</span>" + escapeHtml(v.text) + "</p>";
+  }
+  host.innerHTML = h;
+}
+
+function bibleStep(dir){
+  var bsel = document.getElementById('bibleBook');
+  var csel = document.getElementById('bibleChapter');
+  if(!bsel || !csel) return;
+  var bookNr = parseInt(bsel.value, 10) || 1;
+  var total = BIBLE_CHAPTER_COUNTS[bookNr-1] || 1;
+  var chap = (parseInt(csel.value, 10) || 1) + dir;
+  if(chap < 1){
+    if(bookNr > 1){
+      bsel.value = bookNr - 1;
+      populateBibleChapters();
+      var nt = BIBLE_CHAPTER_COUNTS[parseInt(bsel.value,10)-1] || 1;
+      csel.value = nt;
+    }
+  } else if(chap > total){
+    if(bookNr < 66){
+      bsel.value = bookNr + 1;
+      populateBibleChapters();
+      csel.value = 1;
+    }
+  } else {
+    csel.value = chap;
+  }
+  loadBibleChapterUI();
+}
+
+function bibleGoToRef(){
+  var inp = document.getElementById('bibleGoRef');
+  var ref = (inp.value || "").trim();
+  if(!ref){ alert("Type a reference first, for example John 3:16 or Psalms 23."); return; }
+  var parsed = bibleParseReference(ref);
+  if(!parsed){ alert("Could not read that reference. Please use a format like John 3:16, or Psalms 23:1-6."); return; }
+  var bsel = document.getElementById('bibleBook');
+  var csel = document.getElementById('bibleChapter');
+  var total = BIBLE_CHAPTER_COUNTS[parsed.bookNr-1] || 1;
+  var chap = Math.min(Math.max(parsed.chapter, 1), total);
+  bsel.value = parsed.bookNr;
+  populateBibleChapters();
+  csel.value = chap;
+  loadBibleChapterUI();
+  /* if a verse range was asked for, show it highlighted right below */
+  if(parsed.verseStart){
+    bibleFetchReference(ref, document.getElementById('bibleTrans').value).then(function(res){
+      var box = document.createElement('div');
+      box.className = 'scripture-text';
+      box.style.marginTop = '14px';
+      box.innerHTML = "<b>" + escapeHtml(res.reference) + "</b> (" + escapeHtml(res.translation) + ")<br>" + escapeHtml(res.text);
+      var host = document.getElementById('bibleReader');
+      host.insertBefore(box, host.firstChild ? host.firstChild.nextSibling : null);
+    }).catch(function(){});
+  }
+}
+
+function bibleCopyChapter(){
+  var host = document.getElementById('bibleReader');
+  copyText(host.innerText);
+}
+
+function runBibleSearch(){
+  var q = (document.getElementById('bibleSearchBox').value || "").trim();
+  var info = document.getElementById('bibleSearchInfo');
+  var out = document.getElementById('bibleSearchResults');
+  if(q.length < 3){ alert("Please type at least 3 letters to search."); return; }
+  out.innerHTML = "<div class='text-gray-500 text-sm'>Searching the chapters saved on this device\u2026</div>";
+  info.innerText = "";
+  bibleSearchVerses(document.getElementById('bibleTrans').value, q, 400).then(function(res){
+    if(!res.length){
+      out.innerHTML = "<div class='text-gray-500 text-sm'>No verses found for \u201c" + escapeHtml(q) + "\u201d in the chapters saved on this device.</div>"
+        + "<div class='text-xs text-gray-500 mt-2'>Save more books with <b>Save whole book</b> or <b>Save the whole Bible</b> below, then search again.</div>";
+      return;
+    }
+    info.innerText = res.length + " verse(s) found";
+    var h = "";
+    for(var i=0;i<res.length;i++){
+      var v = res[i];
+      h += "<div class='border rounded-lg p-3' style='border-color:#e5e0d0;'>"
+        + "<div class='text-xs font-bold' style='color:var(--navy);'>" + escapeHtml(v.bookName) + " " + v.chapter + ":" + v.verse + "</div>"
+        + "<div class='bible-read' style='font-size:16.5px;line-height:1.65;'>" + escapeHtml(v.text) + "</div>"
+        + "</div>";
+    }
+    out.innerHTML = h;
+  });
+}
+
+function bibleClearSearch(){
+  document.getElementById('bibleSearchBox').value = "";
+  document.getElementById('bibleSearchResults').innerHTML = "";
+  document.getElementById('bibleSearchInfo').innerText = "";
+}
+
+function bibleDownloadThisBook(){
+  var bsel = document.getElementById('bibleBook');
+  var bookNr = parseInt(bsel.value, 10) || 1;
+  var prog = document.getElementById('bibleDownloadProgress');
+  prog.innerHTML = "Saving <b>" + escapeHtml(bibleBookName(bookNr)) + "</b> for offline use\u2026";
+  bibleLoadBook(document.getElementById('bibleTrans').value, bookNr).then(function(bk){
+    prog.innerHTML = "<span style='color:#2e7d32;'>Saved <b>" + escapeHtml(bk.bookName) + "</b> (" + bk.chapters.length + " chapters). You can now read it with no internet.</span>";
+    bibleRefreshOfflineInfo();
+  }).catch(function(err){
+    prog.innerHTML = "<span style='color:#b3261e;'>Could not save the book: " + escapeHtml(err.message) + "</span>";
+  });
+}
+
+function bibleDownloadWholeBible(){
+  var prog = document.getElementById('bibleDownloadProgress');
+  var trans = document.getElementById('bibleTrans').value;
+  if(!confirm("This will download all 66 books of the Bible so you can read and search them without internet.\n\nIt may take a few minutes and a fair amount of data. Continue?")) return;
+  prog.innerHTML = "Starting\u2026";
+  bibleDownloadWhole(trans, function(done, total, name){
+    prog.innerHTML = "Saving the Bible\u2026 <b>" + done + " of " + total + "</b> books &nbsp;(" + escapeHtml(name) + ")";
+  }).then(function(r){
+    prog.innerHTML = "<span style='color:#2e7d32;'>Finished. <b>" + r.books + " books</b> of the Bible are saved on this device. "
+      + "Reading and searching now work with no internet.</span>";
+    bibleRefreshOfflineInfo();
+  }).catch(function(err){
+    prog.innerHTML = "<span style='color:#b3261e;'>Download stopped: " + escapeHtml(err.message) + "</span>";
+  });
+}
+
+function bibleRefreshOfflineInfo(){
+  var el = document.getElementById('bibleDownloadProgress');
+  if(!el) return;
+  var trans = document.getElementById('bibleTrans') ? document.getElementById('bibleTrans').value : "KJV";
+  bibleCountCachedChapters(trans).then(function(n){
+    if(n > 0){
+      el.innerHTML = "Already saved on this device for <b>" + escapeHtml(trans) + "</b>: <b>" + n + " chapter(s)</b>. "
+        + "Read any chapter once and it is saved automatically.";
+    } else {
+      el.innerHTML = "Nothing saved yet for <b>" + escapeHtml(trans) + "</b>. Read a chapter, or press one of the buttons above.";
+    }
+  });
+}
+
+function bibleTabOpened(){
+  if(!document.getElementById('bibleBook').children.length){ populateBibleSelects(); }
+  bibleRefreshOfflineInfo();
+  var host = document.getElementById('bibleReader');
+  if(host && host.innerText.indexOf('Choose a book') !== -1){
+    var bsel = document.getElementById('bibleBook');
+    if(bsel && bsel.value){ loadBibleChapterUI(); }
+  }
+}
+
+/* =========================================================
+   MODEL / KEY UI
+   ========================================================= */
+function onModelChanged(){
+  var sel = document.getElementById('s_geminiModel');
+  if(!sel) return;
+  settings.geminiModel = sel.value;
+  try{ localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); }catch(e){}
+  refreshConnectionUI();
+  setConnectionStatus('unknown', "Model changed to " + currentModelLabel() + ". Press Test connection to check it.");
+}
+
+/* =========================================================
+   AI CHAT UPGRADES
+   ========================================================= */
+function formatAIText(t){
+  var esc = escapeHtml(t);
+  var lines = esc.split("\n");
+  var out = "";
+  var inList = false;
+  function closeList(){ if(inList){ out += "</ul>"; inList = false; } }
+  for(var i=0;i<lines.length;i++){
+    var L = lines[i];
+    var trimmed = L.trim();
+    if(!trimmed){ closeList(); continue; }
+    var boldHeading = trimmed.match(/^([A-Z][A-Z0-9 ,'&()\-]{3,60}):?$/);
+    var bullet = trimmed.match(/^[-*\u2022]\s+(.*)$/);
+    var numbered = trimmed.match(/^(\d{1,2})[.)]\s+(.*)$/);
+    if(boldHeading && trimmed.length < 62 && trimmed.indexOf("  ") === -1){
+      closeList();
+      out += "<h4>" + trimmed.replace(/:$/,"") + "</h4>";
+    } else if(bullet || numbered){
+      if(!inList){ out += "<ul>"; inList = true; }
+      out += "<li>" + (bullet ? bullet[1] : numbered[2]) + "</li>";
+    } else {
+      closeList();
+      out += "<p class='ai-p'>" + trimmed + "</p>";
+    }
+  }
+  closeList();
+  return out;
+}
+
+function renderAIChat_ui(){
+  var host = document.getElementById('aiChatMessages');
+  if(!host) return;
+  var html = "";
+  if(aiChatHistory.length === 0){
+    html = "<div class='text-center text-gray-400 text-sm mt-8'>"
+      + "<div style='font-size:15px;'><b>Ask me to write a sermon, check your draft, or explain a passage.</b></div>"
+      + "<div class='mt-2'>Everything I write uses simple, everyday English that village people can follow, and every sermon is built on the five foundations: "
+      + "<b>Biblical Foundations, Biblical Typology, the Life of Christ, the Life of the Believer, and the Life of the Church.</b></div>"
+      + "<div class='mt-2'>Try: \u201cGenerate a short sermon about the Good Shepherd\u201d</div>"
+      + "</div>";
+  }
+  for(var i=0;i<aiChatHistory.length;i++){
+    var m = aiChatHistory[i];
+    if(m.role === 'user'){
+      html += "<div class='flex justify-end'><div class='ai-bubble user rounded-2xl px-4 py-3 max-w-[85%]'>"
+        + escapeHtml(m.text).replace(/\n/g,'<br>') + "</div></div>";
+    } else {
+      html += "<div class='flex justify-start'><div class='ai-bubble ai rounded-2xl px-4 py-3 max-w-[85%]'>"
+        + formatAIText(m.text) + "</div></div>";
+    }
+  }
+  host.innerHTML = html;
+  host.scrollTop = host.scrollHeight;
+}
+/* Hand our richer rendering to the whole app, including the original call sites. */
+window.renderAIChat = renderAIChat_ui;
+var renderAIChat = renderAIChat_ui;
+
+/* The unified prompt, now bound to simple English + the five foundations. */
+function buildUnifiedAIPrompt(userMessage){
+  var instructions =
+    "You are the AI Bible Assistant inside the Daily Sermons app for " + settings.ministryName + " (Apostle Frank Tembo). "
+    + "You help a village church. You can do three things, depending on what the user asks:\n\n"
+    + "1) WRITE A SERMON DRAFT \u2014 if the user asks you to write, generate, make or prepare a sermon, message or devotional on a topic or Bible book, "
+    + "reply with ONLY a JSON object wrapped exactly like this: <SERMON_JSON>{...}</SERMON_JSON> \u2014 with at most one short friendly sentence before the tag and nothing after it. "
+    + "Choose the type that best fits their words (default to 'short' if it is not clear): short, series, passage, book, devotional, general. Use this exact schema for the chosen type:\n"
+    + "  short: {\"title\":\"\",\"scriptures\":\"\",\"objectives\":\"\",\"introduction\":\"\",\"mainMessage\":{\"points\":[\"...\"]},\"summary\":[\"...\"],\"conclusion\":\"\",\"prayerPoints\":[\"...\"]}  (points: numbered, max 50)\n"
+    + "  series: mainMessage:{\"parts\":[{\"title\":\"Part 1: ...\",\"points\":[\"...\"]}]}  (unlimited parts, default 3)\n"
+    + "  passage: mainMessage:{\"text\":\"flowing paragraphs, NO bullets or numbering\"}\n"
+    + "  book: mainMessage:{\"chapters\":[{\"chapter\":\"Chapter 1\",\"heading\":\"...\",\"points\":[\"...\"]}]}\n"
+    + "  devotional: mainMessage:{\"dev_focus\":\"\",\"dev_scripture\":\"\",\"dev_personalised\":\"\",\"dev_prayer\":\"\",\"dev_speak\":\"\",\"dev_call\":\"\",\"dev_grace\":\"\",\"dev_see\":\"\",\"dev_thank\":\"\"}\n"
+    + "  general: mainMessage:{\"text\":\"free format\"}\n"
+    + "  Add a top-level \"msgtype\" field naming the chosen type.\n"
+    + "  IMPORTANT: never write out the full wording of a Bible verse. Give scripture REFERENCES only, such as John 3:16.\n"
+    + SIMPLE_ENGLISH_RULES + SERMON_FOUNDATIONS
+    + "\n\n2) CHECK A DRAFT \u2014 if the user asks you to review, check, correct or give feedback on a draft (theirs or the current Editor draft given below), "
+    + "reply in plain conversational text under three short headings written in capital letters: DOCTRINAL SOUNDNESS, SUGGESTED CROSS-REFERENCES (references only), and HOW TO MAKE IT PLAINER AND STRONGER. "
+    + "Say clearly whether the five foundations are all present, and what is missing. Use simple English.\n"
+    + "3) BIBLE QUESTION OR EXPLAIN A PASSAGE \u2014 for anything else (questions, explaining a passage they pasted, general conversation), "
+    + "reply in plain, warm, pastoral text. Use simple English and short sentences. Cite scripture REFERENCES only.\n"
+    + "Never use markdown symbols such as ** or #. Use short capital-letter headings only as described.\n";
+
+  var editorSnapshot = "";
+  var titleEl = document.getElementById('f_title');
+  var titleVal = titleEl ? titleEl.value.trim() : "";
+  if(titleVal){
+    editorSnapshot = "\n\n[Current Editor draft, for context]\n" + generateSermonText({
+      date: document.getElementById('f_date').value || todayKey(),
+      preacher: document.getElementById('f_preacher').value,
+      title: titleVal,
+      scriptures: document.getElementById('f_scriptures').value,
+      verseText: document.getElementById('f_versetext').value,
+      objectives: document.getElementById('f_objectives').value,
+      introduction: document.getElementById('f_introduction').value,
+      mainMessage: collectMainMessage(),
+      summary: collectPoints('summaryPoints'),
+      summaryNumbered: document.getElementById('f_summarynum').checked,
+      conclusion: document.getElementById('f_conclusion').value,
+      prayerPoints: collectPoints('prayerPoints')
+    });
+  }
+
+  var recentHistory = "";
+  var startIdx = Math.max(0, aiChatHistory.length - 6);
+  for(var i=startIdx;i<aiChatHistory.length;i++){
+    recentHistory += (aiChatHistory[i].role === 'user' ? "User: " : "Assistant: ") + aiChatHistory[i].text + "\n";
+  }
+
+  return instructions + "\n" + recentHistory + "User: " + userMessage + editorSnapshot;
+}
+
+/* The direct generator prompt, also bound to the same standard. */
+function buildSermonPrompt(type, topic, count){
+  var base = sermonWritingStandard(topic) + "\n\n"
+    + "Respond with ONLY valid JSON. No markdown fences and no commentary. Match this schema exactly:\n";
+  var schema = "";
+  if(type === 'short'){
+    schema = '{"title":"...","scriptures":"...","objectives":"...","introduction":"...","mainMessage":{"points":["point 1","point 2"]},"summary":["...","..."],"conclusion":"...","prayerPoints":["...","..."]}';
+    base += "The mainMessage.points array must hold exactly " + count + " numbered points (max 50). Each point is one short teaching statement with a scripture reference in brackets. "
+      + "Shape the points so all five foundations appear, in order.";
+  } else if(type === 'series'){
+    schema = '{"title":"...","scriptures":"...","objectives":"...","introduction":"...","mainMessage":{"parts":[{"title":"Part 1: ...","points":["...","..."]}]},"summary":["...","..."],"conclusion":"...","prayerPoints":["...","..."]}';
+    base += "The mainMessage.parts array must hold exactly " + count + " parts, each with 3 to 6 numbered points and scripture references. Weave the five foundations through the parts.";
+  } else if(type === 'passage'){
+    schema = '{"title":"...","scriptures":"...","objectives":"...","introduction":"...","mainMessage":{"text":"the message in flowing paragraphs, NO bullets or numbering"},"summary":["...","..."],"conclusion":"...","prayerPoints":["...","..."]}';
+    base += "mainMessage.text must be 3 to 5 connected paragraphs with no numbering and no bullet points. The five foundations must be explained in the flow of the paragraphs.";
+  } else if(type === 'book'){
+    schema = '{"title":"...","scriptures":"...","objectives":"...","introduction":"...","mainMessage":{"chapters":[{"chapter":"Chapter 1","heading":"...","points":["...","..."]}]},"summary":["...","..."],"conclusion":"...","prayerPoints":["...","..."]}';
+    base += "The mainMessage.chapters array must hold exactly " + count + " chapters working through the book of \"" + topic + "\" in order, each with its own heading and 3 to 6 numbered points.";
+  } else if(type === 'devotional'){
+    schema = '{"title":"...","scriptures":"...","objectives":"...","introduction":"...","mainMessage":{"dev_focus":"...","dev_scripture":"...","dev_personalised":"...","dev_prayer":"...","dev_speak":"...","dev_call":"...","dev_grace":"...","dev_see":"...","dev_thank":"..."},"summary":["...","..."],"conclusion":"...","prayerPoints":["...","..."]}';
+    base += "Fill every devotional field fully and personally, speaking to the reader as 'you', in simple English.";
+  } else {
+    schema = '{"title":"...","scriptures":"...","objectives":"...","introduction":"...","mainMessage":{"text":"free-format sermon text"},"summary":["...","..."],"conclusion":"...","prayerPoints":["...","..."]}';
+    base += "Write the message clearly in simple English and show the five foundations.";
+  }
+  return base + schema;
+}
+
+function aiChatSend(){
+  var inp = document.getElementById('aiChatInput');
+  var msg = (inp.value || "").trim();
+  if(!msg) return;
+  if(!settings.geminiApiKey){
+    appendAIChatBubble('ai', "No API key is saved yet. Please open Settings, paste your Gemini API key and press Save key. Then come back and try again.");
+    switchTab('settings');
+    return;
+  }
+  var ml = document.getElementById('aiModelLabel');
+  if(ml){ ml.innerText = currentModelLabel(); }
+  var mf = document.getElementById('aiModelLabelFoot');
+  if(mf){ mf.innerText = currentModelLabel(); }
+  appendAIChatBubble('user', msg);
+  inp.value = "";
+  appendAIChatBubble('ai', "\u2026thinking");
+  var thinkingIdx = aiChatHistory.length - 1;
+  var prompt = buildUnifiedAIPrompt(msg);
+  callGeminiRaw(prompt).then(function(text){
+    setConnectionStatus('ok', "Connected. Using " + currentModelLabel() + ".");
+    var sermonMatch = text.match(/<SERMON_JSON>([\s\S]*?)<\/SERMON_JSON>/i);
+    if(sermonMatch){
+      var lead = text.substring(0, sermonMatch.index).trim();
+      try{
+        var data = extractJsonFromText(sermonMatch[1]);
+        var chosen = data.msgtype || (data.mainMessage && data.mainMessage.type) || 'short';
+        loadSermonJsonIntoEditor(data);
+        aiChatHistory[thinkingIdx] = {role:'ai', text: (lead || "Here is your sermon draft.") + "\n\nThe draft is now loaded in the Editor tab. Read it through, change anything you wish, then press Save Sermon."};
+      }catch(e){
+        aiChatHistory[thinkingIdx] = {role:'ai', text: "I tried to write the sermon but the answer did not come through properly. Please try again, or say it in a slightly different way."};
+      }
+    } else {
+      aiChatHistory[thinkingIdx] = {role:'ai', text: text.trim()};
+    }
+    renderAIChat();
+  }).catch(function(err){
+    setConnectionStatus('fail', err.message);
+    aiChatHistory[thinkingIdx] = {role:'ai', text: "Sorry, something went wrong.\n" + err.message};
+    renderAIChat();
+  });
+}
+
+function aiWriteSermonQuick(){
+  var inp = document.getElementById('aiChatInput');
+  var topic = (inp.value || "").trim();
+  if(!topic){
+    var t = prompt("What should the sermon be about?\n\nFor example: the Good Shepherd, water baptism, or the book of Jonah", "");
+    if(!t) return;
+    topic = t.trim();
+  }
+  inp.value = "Write a short sermon about " + topic + " in simple English.";
+  aiChatSend();
+}
+
+function aiCheckDraftQuick(){
+  var inp = document.getElementById('aiChatInput');
+  var titleEl = document.getElementById('f_title');
+  if(!titleEl || !titleEl.value.trim()){
+    alert("There is nothing in the Editor yet. Create or open a sermon in the Editor tab first, then press Check my draft.");
+    return;
+  }
+  inp.value = "Please check my current Editor draft and tell me whether all five foundations are present, and how to make it plainer and stronger.";
+  aiChatSend();
+}
+
+</script>
+<script>
+/* ==== part5_init.js ==== */
+/* =========================================================
+   DAILY SERMONS - UPGRADE PACK - PART 5: DEFAULTS + BOOT
+   Runs after the app's own onload so nothing existing breaks.
+   ========================================================= */
+
+/* ---------- simple settings defaults ---------- */
+function applyUpgradeDefaults(){
+  var changed = false;
+  if(!settings.bibleTranslation){ settings.bibleTranslation = "KJV"; changed = true; }
+  if(!settings.bibleBook){ settings.bibleBook = 43; changed = true; }      /* John */
+  if(!settings.bibleChapter){ settings.bibleChapter = 1; changed = true; }
+  var legacy = !settings.geminiModel || settings.geminiModel === "gemini-3.1-flash-lite";
+  if(legacy){
+    var known = false;
+    for(var i=0;i<AI_MODELS.length;i++){ if(AI_MODELS[i].id === settings.geminiModel){ known = true; } }
+    if(!known){ settings.geminiModel = AI_MODELS[0].id; changed = true; }
+  }
+  if(changed){ try{ localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); }catch(e){} }
+}
+
+/* ---------- boot the large library, then re-render ---------- */
+function bootStore(){
+  return storeInit().then(function(all){
+    var merged = {};
+    for(var k in all){ if(Object.prototype.hasOwnProperty.call(all,k)){ merged[k] = all[k]; } }
+    for(var j in sermons){ if(Object.prototype.hasOwnProperty.call(sermons,j) && !merged[j]){ merged[j] = sermons[j]; } }
+    sermons = merged;
+    return Store.putAll(sermons);
+  }).then(function(){
+    refreshStoragePanel();
+    updateStorageStats();
+    renderLibrary();
+    renderPreviewIfOpen();
+    refreshConnectionUI();
+    if(!settings.geminiApiKey){
+      setConnectionStatus('unknown', "No API key saved yet. Open Settings, paste your key and press Save key.");
+    } else {
+      setConnectionStatus('unknown', "Using " + currentModelLabel() + ". Press Test connection in Settings to check it.");
+    }
+  }).catch(function(err){
+    /* never leave the app blank - keep whatever is already loaded */
+    try{
+      renderLibrary();
+      updateStorageStats();
+      setConnectionStatus('unknown', "Storage notice: " + (err && err.message ? err.message : "could not open the large library"));
+    }catch(e){}
+  });
+}
+
+function renderPreviewIfOpen(){
+  var host = document.getElementById('previewBody');
+  if(!host) return;
+  if(currentPreviewId && sermons[currentPreviewId]){
+    renderPreview(currentPreviewId);
+  } else if(!Object.keys(sermons).length){
+    host.innerHTML = "<div class='text-gray-400 text-center py-10'>No sermons yet. Go to the Editor tab to create today's sermon.</div>";
+  }
+}
+
+/* ---------- wire the upgrade into the app after its own init ---------- */
+(function(){
+  function startUpgrade(){
+    applyUpgradeDefaults();
+    populateModelSelect();
+    populateBibleSelects();
+    populateVersionSelects();
+    refreshConnectionUI();
+    measureStorage();
+    requestPersistentStorage();
+    bootStore();
+    try{ if(typeof renderAIChat === 'function'){ renderAIChat(); } }catch(e){}
+  }
+
+  var prev = window.onload;
+  window.onload = function(){
+    if(typeof prev === 'function'){
+      try{ prev(); }catch(e){ }
+    }
+    try{ startUpgrade(); }catch(e){
+      try{ console.warn("Upgrade start failed:", e && e.message); }catch(e2){}
+    }
+  };
+
+  /* expose a couple of helpers for the Storage tab buttons that the
+     original file also refers to under older names */
+  window.__dailySermonsUpgrade = {
+    version: "upgrade-1",
+    models: AI_MODELS,
+    foundations: ["Biblical Foundations","Biblical Typology","The Life of Christ","The Life of the Believer","The Life of the Church"]
+  };
+})();
 
 </script>
 </body>
