@@ -139,6 +139,12 @@ sweep(document)})();</script>
   @media print{
     .sermon-read, .bible-read{ font-size:12.5pt; line-height:1.6; color:#000; }
   }
+  /* ---------- DOWNLOADABLE CONTENT (added by part7) ---------- */
+  .ai-dl-bar{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:9px; padding-top:9px; border-top:1px dashed #d8d2c2; }
+  .ai-dl-bar .ai-dl-lbl{ font-size:11.5px; font-weight:800; color:#6b6250; text-transform:uppercase; letter-spacing:.05em; }
+  .ai-bubble p b.sc-ref, .ai-bubble li b.sc-ref, .ai-bubble p b.lbl, .ai-bubble li b.lbl{ color:var(--navy-dark); font-weight:800; }
+  .ai-bubble h4 b.sc-ref, .ai-bubble h4 b.lbl{ color:inherit; font-weight:800; }
+  #aiDocPanel{ background:#fdfbf5; }
 
 </style>
 </head>
@@ -411,7 +417,7 @@ sweep(document)})();</script>
   <div class="card mt-4 p-0 overflow-hidden flex flex-col" style="height:70vh;">
     <div class="px-5 pt-4 pb-2 border-b" style="border-color:#eee;">
       <div class="font-bold text-lg" style="color:var(--navy-dark);">🤖 AI Bible Assistant</div>
-      <div class="text-xs text-gray-500">Paste a prompt, a Bible passage, a topic, or a whole draft — ask it to write a sermon, get feedback, or explain a passage. Say "generate a [short/series/passage/book/devotional/general] sermon on ..." and it'll build the draft and load it into the Editor for you.</div>
+      <div class="text-xs text-gray-500">Ask me to <b>write a sermon</b>, <b>create a Bible study</b>, <b>reveal the mysteries of the scriptures</b>, <b>explain the typology of Christ</b>, <b>interpret a passage</b>, or <b>check your draft</b>. Everything is written in simple, everyday English, and every message is read through the lens of Christ. Say "generate a passage message on ..." and the draft loads straight into the Editor for you. <b>To save a copy</b>, add &ldquo;downloadable text file&rdquo; or &ldquo;downloadable html file&rdquo; to your request &mdash; for example: &ldquo;create a bible study on the topic (who is a believer) downloadable text file&rdquo;. Download buttons then appear under the answer.</div>
     </div>
     <div class="px-5 py-2 border-b flex items-center justify-between flex-wrap gap-2" style="border-color:#eee;background:#faf8f3;">
       <div class="text-xs text-gray-600">Model: <b id="aiModelLabel">2.5 Flash Lite</b> &middot; <span id="aiHeaderStatus" class="badge" style="background:#5a6b80;color:#fff;">● AI Not checked</span></div>
@@ -421,6 +427,20 @@ sweep(document)})();</script>
       </div>
     </div>
     <div id="aiChatMessages" class="flex-1 overflow-y-auto px-5 py-4 space-y-3"></div>
+    <!-- ⬇ Generated content — download as TXT or HTML -->
+    <div id="aiDocPanel" class="hidden mt-3 card p-3" style="border-left:4px solid var(--gold);">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div class="text-sm">
+          <b style="color:var(--navy-dark);">📥 Generated content ready to download</b>
+          <div class="text-xs text-gray-600"><span id="aiDocTitle">—</span> <span id="aiDocMeta"></span></div>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+          <button class="btn btn-navy btn-sm" type="button" onclick="downloadLastAIContent('txt')">⬇ Download TEXT (.txt)</button>
+          <button class="btn btn-gold btn-sm" type="button" onclick="downloadLastAIContent('html')">⬇ Download HTML (.html)</button>
+          <button class="btn btn-outline btn-sm" type="button" onclick="copyLastAIContent()">📋 Copy</button>
+        </div>
+      </div>
+    </div>
     <div class="px-4 pb-4 pt-2">
       <div class="border rounded-2xl p-2" style="border-color:#d8d2c2;">
         <textarea id="aiChatInput" rows="2" placeholder="Write a message... paste prompts, Bible text, or a passage" class="!border-none !p-2 resize-none" style="box-shadow:none;" onkeydown="aiChatKeydown(event)"></textarea>
@@ -432,6 +452,13 @@ sweep(document)})();</script>
               <div class="p-2 rounded hover:bg-gray-100 cursor-pointer" onclick="useAIQuick('Generate a series sermon with 3 parts on ')">✨ Generate a series sermon on…</div>
               <div class="p-2 rounded hover:bg-gray-100 cursor-pointer" onclick="useAIQuick('Generate a devotional message about ')">✨ Generate a devotional about…</div>
               <div class="p-2 rounded hover:bg-gray-100 cursor-pointer" onclick="useAIQuick('Generate a book message working through ')">✨ Generate a book message on…</div>
+              <div class="p-2 rounded hover:bg-gray-100 cursor-pointer" onclick="useAIQuick('Generate a passage message on ')">✨ Write a flowing passage message on…</div>
+              <div class="p-2 rounded hover:bg-gray-100 cursor-pointer" onclick="useAIQuick('Create a Bible study on ')">📘 Create a Bible study on…</div>
+              <div class="p-2 rounded hover:bg-gray-100 cursor-pointer" onclick="useAIQuick('Reveal the mysteries of the scriptures about ')">🔑 Reveal the mysteries of…</div>
+              <div class="p-2 rounded hover:bg-gray-100 cursor-pointer" onclick="useAIQuick('Explain the typology of Christ in ')">✨ Explain the typology of Christ in…</div>
+              <div class="p-2 rounded hover:bg-gray-100 cursor-pointer" onclick="useAIQuick('Interpret this Bible passage with clear understanding: ')">🔍 Interpret a passage clearly…</div>
+              <div class="p-2 rounded hover:bg-gray-100 cursor-pointer" onclick="useAIQuick('create a bible study on the topic (who is a believer) downloadable text file')">📄 Bible study → downloadable TEXT file</div>
+              <div class="p-2 rounded hover:bg-gray-100 cursor-pointer" onclick="useAIQuick('create a bible study on the topic (who is a believer) downloadable html file')">📄 Bible study → downloadable HTML file</div>
               <div class="p-2 rounded hover:bg-gray-100 cursor-pointer" onclick="useAIQuick('Please review my current Editor draft and give feedback.')">🔎 Get feedback on my current draft</div>
               <div class="p-2 rounded hover:bg-gray-100 cursor-pointer" onclick="useAIQuick('Explain this Bible passage: ')">📖 Explain a Bible passage…</div>
             </div>
@@ -2466,15 +2493,37 @@ var SIMPLE_ENGLISH_RULES =
   "- Be warm, clear and encouraging. Write so that a child of ten and an old grandmother can both follow.\n" +
   "- Never use markdown symbols such as ** or #. Never use dashes as bullet marks inside sentences.";
 
-/* ---------- The five foundations every sermon must carry ---------- */
-var SERMON_FOUNDATIONS =
-  "\n\nEVERY SERMON MUST BE BUILT ON THESE FIVE FOUNDATIONS. Cover all five, and make each one plain in the sermon:\n" +
-  "1. BIBLICAL FOUNDATIONS - the main scripture truth. Show where it comes from in the Bible and what God says about it.\n" +
-  "2. BIBLICAL TYPOLOGY - shadows and pictures in the Old Testament that point to Jesus. Example: the Passover lamb, the bronze snake lifted up, manna, the rock that gave water. Explain the picture in simple words.\n" +
-  "3. THE LIFE OF CHRIST - what Jesus said, did, suffered, and how He rose again, and how it touches this topic.\n" +
-  "4. THE LIFE OF THE BELIEVER - how the hearer must live it out day by day: what to believe, what to stop doing, what to start doing, how to pray.\n" +
-  "5. THE LIFE OF THE CHURCH - what the church together must do: love one another, share the gospel, baptism, the Lord's Supper, prayer, giving, and serving the community.\n" +
-  "Structure the main points so that these five foundations are clearly shown, in this order, each named inside the point.";
+/* ---------- The five truths: WOVEN IN, NEVER LABELLED ---------- */
+var SERMON_WEAVE =
+  "\n\nTHE FIVE TRUTHS - WEAVE THEM IN, NEVER LABEL THEM.\n" +
+  "Every sermon must carry all five of these truths, but they must NEVER appear as headings, labels, section titles or bullet names.\n" +
+  "Do NOT write the words 'Biblical Foundation', 'Typology', 'Life of Christ', 'Life of the Believer' or 'Life of the Church' anywhere in the sermon. " +
+  "Do not use them as titles, sub-titles, or the start of a sentence. The hearer must never see a label.\n" +
+  "Instead, explain each truth naturally inside the flowing message, as part of the teaching, so the hearer receives it without ever seeing a label.\n" +
+  "The five truths to weave in:\n" +
+  "1. The biblical foundation - where the truth comes from in the Bible and what God says about it.\n" +
+  "2. The biblical picture (typology) - the Old Testament shadows that point to Jesus, such as the Passover lamb, the bronze snake lifted up, the manna, the rock that gave water. Explain the picture in simple words as part of the message.\n" +
+  "3. The life of Christ - what Jesus said, did, suffered and how He rose again, and how it touches this topic.\n" +
+  "4. The life of the believer - how the hearer must live it out each day: what to believe, what to stop, what to start, how to pray.\n" +
+  "5. The life of the church - what the church together must do: love one another, share the gospel, baptism, the Lord's Supper, prayer, giving and serving the community.\n" +
+  "Then close by showing how it applies to life today.\n" +
+  "Write it all as one smooth, connected passage of teaching. Do not use bullet points and do not use numbering in the main message.";
+
+/* ---------- The lens of Christ: read all Scripture through Him ---------- */
+var CHRIST_LENS =
+  "\n\nTHE LENS OF CHRIST. Read and explain every passage through the light of Christ. " +
+  "Show how the passage points to Jesus, speaks of Jesus, or is fulfilled in Jesus. " +
+  "Let Christ be the centre of the message, not a side note.";
+
+/* ---------- What the assistant can do for the user ---------- */
+var ASSISTANT_CAPABILITIES =
+  "\n\nWHAT YOU CAN DO FOR THE USER:\n" +
+  "1. CHAT - answer any Bible question warmly and simply.\n" +
+  "2. CREATE BIBLE STUDIES - build a study with a title, scripture references, questions and simple teaching notes.\n" +
+  "3. CREATE MESSAGES AND SERMONS THROUGH THE LENS OF CHRIST - always show Jesus as the centre.\n" +
+  "4. REVEAL THE MYSTERIES OF THE SCRIPTURES - open up hidden truths, the things God kept for us, and explain them plainly.\n" +
+  "5. EXPLAIN THE TYPOLOGY OF CHRIST - show the Old Testament pictures, shadows and symbols that point to Jesus.\n" +
+  "6. INTERPRET THE BIBLE WITH CLEAR UNDERSTANDING - explain what a passage means, in its setting, in simple words.";
 
 /* ---------- Model dropdown ---------- */
 function populateModelSelect(){
@@ -2691,7 +2740,7 @@ function callGeminiRaw(promptText){
 function sermonWritingStandard(topic){
   return "You are a sound, Bible-based sermon writer for " + settings.ministryName + " (Apostle Frank Tembo). "
     + "You write sermons that ordinary village people can follow easily. "
-    + "Given the topic or Bible book: \"" + topic + "\"." + SIMPLE_ENGLISH_RULES + SERMON_FOUNDATIONS + "\n"
+    + "Given the topic or Bible book: \"" + topic + "\"." + SIMPLE_ENGLISH_RULES + SERMON_WEAVE + CHRIST_LENS + "\n"
     + "Also: only ever give scripture REFERENCES such as John 3:16. Never write out the full wording of a verse, "
     + "because the exact wording must be checked separately.";
 }
@@ -3135,8 +3184,7 @@ function renderAIChat_ui(){
   if(aiChatHistory.length === 0){
     html = "<div class='text-center text-gray-400 text-sm mt-8'>"
       + "<div style='font-size:15px;'><b>Ask me to write a sermon, check your draft, or explain a passage.</b></div>"
-      + "<div class='mt-2'>Everything I write uses simple, everyday English that village people can follow, and every sermon is built on the five foundations: "
-      + "<b>Biblical Foundations, Biblical Typology, the Life of Christ, the Life of the Believer, and the Life of the Church.</b></div>"
+      + "<div class='mt-2'>Everything I write uses simple, everyday English that village people can follow. Every sermon weaves together the biblical foundation, the Old Testament pictures that point to Jesus, the life of Christ, the life of the believer and the life of the church \u2014 all explained naturally inside the message, with no labels.</div>"
       + "<div class='mt-2'>Try: \u201cGenerate a short sermon about the Good Shepherd\u201d</div>"
       + "</div>";
   }
@@ -3161,10 +3209,10 @@ var renderAIChat = renderAIChat_ui;
 function buildUnifiedAIPrompt(userMessage){
   var instructions =
     "You are the AI Bible Assistant inside the Daily Sermons app for " + settings.ministryName + " (Apostle Frank Tembo). "
-    + "You help a village church. You can do three things, depending on what the user asks:\n\n"
+    + "You help a village church. You can do these things, depending on what the user asks:\n\n"
     + "1) WRITE A SERMON DRAFT \u2014 if the user asks you to write, generate, make or prepare a sermon, message or devotional on a topic or Bible book, "
     + "reply with ONLY a JSON object wrapped exactly like this: <SERMON_JSON>{...}</SERMON_JSON> \u2014 with at most one short friendly sentence before the tag and nothing after it. "
-    + "Choose the type that best fits their words (default to 'short' if it is not clear): short, series, passage, book, devotional, general. Use this exact schema for the chosen type:\n"
+    + "Choose the type that best fits their words. DEFAULT TO 'passage' unless the user clearly asks for points, a series, a book study or a devotional: short, series, passage, book, devotional, general. Use this exact schema for the chosen type:\n"
     + "  short: {\"title\":\"\",\"scriptures\":\"\",\"objectives\":\"\",\"introduction\":\"\",\"mainMessage\":{\"points\":[\"...\"]},\"summary\":[\"...\"],\"conclusion\":\"\",\"prayerPoints\":[\"...\"]}  (points: numbered, max 50)\n"
     + "  series: mainMessage:{\"parts\":[{\"title\":\"Part 1: ...\",\"points\":[\"...\"]}]}  (unlimited parts, default 3)\n"
     + "  passage: mainMessage:{\"text\":\"flowing paragraphs, NO bullets or numbering\"}\n"
@@ -3173,12 +3221,13 @@ function buildUnifiedAIPrompt(userMessage){
     + "  general: mainMessage:{\"text\":\"free format\"}\n"
     + "  Add a top-level \"msgtype\" field naming the chosen type.\n"
     + "  IMPORTANT: never write out the full wording of a Bible verse. Give scripture REFERENCES only, such as John 3:16.\n"
-    + SIMPLE_ENGLISH_RULES + SERMON_FOUNDATIONS
+    + SIMPLE_ENGLISH_RULES + SERMON_WEAVE + CHRIST_LENS + ASSISTANT_CAPABILITIES
     + "\n\n2) CHECK A DRAFT \u2014 if the user asks you to review, check, correct or give feedback on a draft (theirs or the current Editor draft given below), "
     + "reply in plain conversational text under three short headings written in capital letters: DOCTRINAL SOUNDNESS, SUGGESTED CROSS-REFERENCES (references only), and HOW TO MAKE IT PLAINER AND STRONGER. "
-    + "Say clearly whether the five foundations are all present, and what is missing. Use simple English.\n"
-    + "3) BIBLE QUESTION OR EXPLAIN A PASSAGE \u2014 for anything else (questions, explaining a passage they pasted, general conversation), "
-    + "reply in plain, warm, pastoral text. Use simple English and short sentences. Cite scripture REFERENCES only.\n"
+    + "Say clearly whether all five truths are present in the flow of the message, and what is missing. Never use the five label words. Use simple English.\n"
+    + "3) BIBLE STUDY \u2014 if the user asks for a Bible study, reply with a study: a title, the scripture references, a short simple teaching note, and 5 to 8 discussion questions. Use simple English.\n"
+    + "4) BIBLE QUESTION, MYSTERIES, TYPOLOGY OR EXPLAIN A PASSAGE \u2014 for anything else (questions, revealing the mysteries of the scriptures, explaining the typology of Christ, interpreting a passage they pasted, general conversation), "
+    + "reply in plain, warm, pastoral text. Use simple English and short sentences. Cite scripture REFERENCES only. Always read the passage through the lens of Christ.\n"
     + "Never use markdown symbols such as ** or #. Use short capital-letter headings only as described.\n";
 
   var editorSnapshot = "";
@@ -3218,13 +3267,14 @@ function buildSermonPrompt(type, topic, count){
   if(type === 'short'){
     schema = '{"title":"...","scriptures":"...","objectives":"...","introduction":"...","mainMessage":{"points":["point 1","point 2"]},"summary":["...","..."],"conclusion":"...","prayerPoints":["...","..."]}';
     base += "The mainMessage.points array must hold exactly " + count + " numbered points (max 50). Each point is one short teaching statement with a scripture reference in brackets. "
-      + "Shape the points so all five foundations appear, in order.";
+      + "Weave all five truths into the points naturally, in order, but never label them.";
   } else if(type === 'series'){
     schema = '{"title":"...","scriptures":"...","objectives":"...","introduction":"...","mainMessage":{"parts":[{"title":"Part 1: ...","points":["...","..."]}]},"summary":["...","..."],"conclusion":"...","prayerPoints":["...","..."]}';
     base += "The mainMessage.parts array must hold exactly " + count + " parts, each with 3 to 6 numbered points and scripture references. Weave the five foundations through the parts.";
   } else if(type === 'passage'){
     schema = '{"title":"...","scriptures":"...","objectives":"...","introduction":"...","mainMessage":{"text":"the message in flowing paragraphs, NO bullets or numbering"},"summary":["...","..."],"conclusion":"...","prayerPoints":["...","..."]}';
-    base += "mainMessage.text must be 3 to 5 connected paragraphs with no numbering and no bullet points. The five foundations must be explained in the flow of the paragraphs.";
+    base += "mainMessage.text must be 3 to 5 connected paragraphs of flowing prose with no numbering and no bullet points. "
+      + "Explain all five truths inside the flow of the paragraphs, and never label them. Read the passage through the lens of Christ.";
   } else if(type === 'book'){
     schema = '{"title":"...","scriptures":"...","objectives":"...","introduction":"...","mainMessage":{"chapters":[{"chapter":"Chapter 1","heading":"...","points":["...","..."]}]},"summary":["...","..."],"conclusion":"...","prayerPoints":["...","..."]}';
     base += "The mainMessage.chapters array must hold exactly " + count + " chapters working through the book of \"" + topic + "\" in order, each with its own heading and 3 to 6 numbered points.";
@@ -3397,6 +3447,742 @@ function renderPreviewIfOpen(){
     foundations: ["Biblical Foundations","Biblical Typology","The Life of Christ","The Life of the Believer","The Life of the Church"]
   };
 })();
+
+</script>
+<script>
+/* ==== part6_sanitize.js ==== */
+/* =========================================================
+   DAILY SERMONS - UPGRADE PACK - PART 6: LABEL SANITISER
+   The five truths must be WOVEN into the message, never shown
+   as visible labels, headings or section titles. This file
+   removes any label the AI may still slip in, so the output
+   always reads as one flowing message.
+   ========================================================= */
+
+/* The label words that must never appear as a heading or label. */
+var FOUNDATION_LABEL_WORDS = [
+  "biblical foundations", "biblical foundation",
+  "biblical typology", "typology",
+  "the life of christ", "life of christ",
+  "the life of the believer", "life of the believer",
+  "the life of the church", "life of the church"
+];
+
+/* One regex that matches a label sitting at the start of a line or sentence,
+   optionally numbered, optionally in markdown bold, followed by : - or a dash. */
+var FOUNDATION_LABEL_AT_START =
+  /(^|[\n.;!?]\s*)(?:\*\*)?(?:\d{1,2}[.)]\s*)?(?:the\s+)?(?:biblical\s+foundations?|biblical\s+typology|typology|life\s+of\s+christ|life\s+of\s+the\s+believer|life\s+of\s+the\s+church)(?:\*\*)?\s*[:\-\u2013\u2014]\s*/gi;
+
+/* Strip a bare label line (a line that is nothing but the label). */
+function stripFoundationLabels(text){
+  if(text === null || text === undefined) return text;
+  var s = String(text);
+  if(!s) return s;
+
+  /* 1. remove a label that opens a line or sentence and is followed by : - or a dash */
+  s = s.replace(FOUNDATION_LABEL_AT_START, "$1");
+
+  /* 2. drop any line that is nothing but a label (with optional numbering / bold) */
+  var lines = s.split("\n");
+  var out = [];
+  for(var i=0;i<lines.length;i++){
+    var line = lines[i];
+    var core = line.trim()
+      .replace(/^\*\*|\*\*$/g, "")
+      .replace(/^(\d{1,2}[.)]|[-*\u2022])\s*/, "")
+      .trim()
+      .replace(/[:\-\u2013\u2014]\s*$/, "")
+      .trim()
+      .toLowerCase();
+    var isBareLabel = false;
+    for(var j=0;j<FOUNDATION_LABEL_WORDS.length;j++){
+      if(core === FOUNDATION_LABEL_WORDS[j]){ isBareLabel = true; break; }
+    }
+    if(isBareLabel){ continue; }
+    out.push(line);
+  }
+  s = out.join("\n");
+
+  /* 3. tidy up any blank lines left behind, and stray leading punctuation */
+  s = s.replace(/\n{3,}/g, "\n\n");
+  s = s.replace(/^[\s:;\-\u2013\u2014]+/, "");
+
+  /* 4. remove leftover markdown bold marks and stray leading punctuation on each line,
+        then capitalise a line that lost its label so it still reads as a sentence. */
+  var lines2 = s.split("\n");
+  for(var m=0;m<lines2.length;m++){
+    var L = lines2[m];
+    var lead = L.match(/^\s*/)[0];
+    var body = L.substring(lead.length);
+    body = body.replace(/^(\*\*|__)\s*/, "").replace(/^[\s:;\-\u2013\u2014]+/, "");
+    body = body.replace(/\s*(\*\*|__)\s*$/, "");
+    if(body && /^[a-z]/.test(body)){ body = body.charAt(0).toUpperCase() + body.substring(1); }
+    lines2[m] = lead + body;
+  }
+  s = lines2.join("\n");
+  s = s.replace(/\n{3,}/g, "\n\n");
+
+  /* 5. capitalise a lowercase word that now begins a sentence after . ! or ? */
+  s = s.replace(/([.!?]\s+)([a-z])/g, function(all, p, ch){ return p + ch.toUpperCase(); });
+  return s;
+}
+
+/* Walk a sermon object and clean ONLY the prose fields.
+   Structural fields (msgtype, title, scriptures, verseText, bibleVersion,
+   date, preacher, id) are left exactly as they are, so the app keeps working. */
+function sanitizeSermonData(data){
+  if(!data || typeof data !== "object") return data;
+
+  function cleanStr(v){ return (typeof v === "string") ? stripFoundationLabels(v) : v; }
+  function cleanArr(a){
+    if(Object.prototype.toString.call(a) !== "[object Array]") return a;
+    for(var i=0;i<a.length;i++){ if(typeof a[i] === "string"){ a[i] = stripFoundationLabels(a[i]); } }
+    return a;
+  }
+
+  /* prose fields that sit directly on the sermon */
+  var proseKeys = ["introduction","conclusion","objectives"];
+  for(var p=0;p<proseKeys.length;p++){
+    if(typeof data[proseKeys[p]] === "string"){ data[proseKeys[p]] = cleanStr(data[proseKeys[p]]); }
+  }
+  if(data.summary){ data.summary = cleanArr(data.summary); }
+  if(data.prayerPoints){ data.prayerPoints = cleanArr(data.prayerPoints); }
+
+  /* the main message, by type */
+  var mm = data.mainMessage;
+  if(mm && typeof mm === "object"){
+    if(typeof mm.text === "string"){ mm.text = cleanStr(mm.text); }
+    if(mm.points){ mm.points = cleanArr(mm.points); }
+    if(mm.parts && Object.prototype.toString.call(mm.parts) === "[object Array]"){
+      for(var i=0;i<mm.parts.length;i++){
+        var pt = mm.parts[i];
+        if(pt && typeof pt === "object"){
+          if(typeof pt.title === "string"){ pt.title = cleanStr(pt.title); }
+          if(pt.points){ pt.points = cleanArr(pt.points); }
+        }
+      }
+    }
+    if(mm.chapters && Object.prototype.toString.call(mm.chapters) === "[object Array]"){
+      for(var c=0;c<mm.chapters.length;c++){
+        var ch = mm.chapters[c];
+        if(ch && typeof ch === "object"){
+          if(typeof ch.heading === "string"){ ch.heading = cleanStr(ch.heading); }
+          if(ch.points){ ch.points = cleanArr(ch.points); }
+        }
+      }
+    }
+    /* devotional prose fields */
+    var devKeys = ["dev_focus","dev_scripture","dev_personalised","dev_prayer","dev_speak",
+                   "dev_call","dev_grace","dev_see","dev_thank"];
+    for(var d=0;d<devKeys.length;d++){
+      if(typeof mm[devKeys[d]] === "string"){ mm[devKeys[d]] = cleanStr(mm[devKeys[d]]); }
+    }
+  }
+  return data;
+}
+
+/* ---- Hook 1: clean the sermon JSON before it reaches the Editor ---- */
+(function(){
+  var originalLoad = window.loadSermonJsonIntoEditor;
+  if(typeof originalLoad === "function"){
+    window.loadSermonJsonIntoEditor = function(data){
+      try{ data = sanitizeSermonData(data); }catch(e){}
+      return originalLoad(data);
+    };
+    /* the app calls it by bare name too, so keep that binding in step */
+    try{ loadSermonJsonIntoEditor = window.loadSermonJsonIntoEditor; }catch(e){}
+  }
+})();
+
+/* ---- Hook 2: clean any AI chat reply text as a final safety net ---- */
+(function(){
+  var originalFormat = window.formatAIText;
+  if(typeof originalFormat === "function"){
+    window.formatAIText = function(t){ return originalFormat(stripFoundationLabels(t)); };
+    try{ formatAIText = window.formatAIText; }catch(e){}
+  }
+})();
+
+/* ---- Hook 3: clean the rendered main message and the exported text ---- */
+(function(){
+  var originalMainHtml = window.mainMessageHtml;
+  if(typeof originalMainHtml === "function"){
+    window.mainMessageHtml = function(mm){
+      try{
+        if(mm && mm.type === "passage" && mm.text){ mm = { type:"passage", text: stripFoundationLabels(mm.text) }; }
+        else if(mm && mm.type === "general" && mm.text){ mm = { type:"general", text: stripFoundationLabels(mm.text) }; }
+        else if(mm && mm.type === "short" && mm.points){ mm = { type:"short", points: mm.points.map(stripFoundationLabels) }; }
+        else if(mm && mm.type === "series" && mm.parts){
+          mm = { type:"series", parts: mm.parts.map(function(p){ return { title: stripFoundationLabels(p.title), points: (p.points||[]).map(stripFoundationLabels) }; }) };
+        }
+        else if(mm && mm.type === "book" && mm.chapters){
+          mm = { type:"book", chapters: mm.chapters.map(function(c){ return { chapter: stripFoundationLabels(c.chapter), heading: stripFoundationLabels(c.heading), points: (c.points||[]).map(stripFoundationLabels) }; }) };
+        }
+      }catch(e){}
+      return originalMainHtml(mm);
+    };
+    try{ mainMessageHtml = window.mainMessageHtml; }catch(e){}
+  }
+})();
+
+/* ---- Hook 4: clean the plain-text export ---- */
+(function(){
+  var originalMainText = window.mainMessageText;
+  if(typeof originalMainText === "function"){
+    window.mainMessageText = function(mm){ return stripFoundationLabels(originalMainText(mm)); };
+    try{ mainMessageText = window.mainMessageText; }catch(e){}
+  }
+})();
+
+/* Expose for testing. */
+window.__foundationSanitizer = {
+  strip: stripFoundationLabels,
+  sanitize: sanitizeSermonData,
+  labels: FOUNDATION_LABEL_WORDS
+};
+
+</script>
+<script>
+/* ==== part7_general.js ==== */
+/* =========================================================
+   DAILY SERMONS - UPGRADE PACK - PART 7
+   DOWNLOADABLE TXT + HTML FOR EVERYTHING THE AI GENERATES
+   - Detects "downloadable text file" / "downloadable html file"
+   - Turns any AI reply or Bible study into a clean .txt AND .html
+   - Bolds scriptures, titles, headings and sub-headings
+   ========================================================= */
+
+/* ---------- Bible books, longest name first (for scripture bolding) ---------- */
+var BIBLE_BOOK_LIST = [
+  "Genesis","Exodus","Leviticus","Numbers","Deuteronomy","Joshua","Judges","Ruth",
+  "1 Samuel","2 Samuel","1 Kings","2 Kings","1 Chronicles","2 Chronicles",
+  "Ezra","Nehemiah","Esther","Job","Psalm","Psalms","Proverbs","Ecclesiastes",
+  "Song of Solomon","Song of Songs","Isaiah","Jeremiah","Lamentations","Ezekiel",
+  "Daniel","Hosea","Joel","Amos","Obadiah","Jonah","Micah","Nahum","Habakkuk",
+  "Zephaniah","Haggai","Zechariah","Malachi","Matthew","Mark","Luke","John","Acts",
+  "Romans","1 Corinthians","2 Corinthians","Galatians","Ephesians","Philippians",
+  "Colossians","1 Thessalonians","2 Thessalonians","1 Timothy","2 Timothy","Titus",
+  "Philemon","Hebrews","James","1 Peter","2 Peter","1 John","2 John","3 John",
+  "Jude","Revelation"
+];
+BIBLE_BOOK_LIST.sort(function(a,b){ return b.length - a.length; });
+
+var SCRIPTURE_RE = new RegExp(
+  "(?:(?:[1-3]\\s+)?(?:" + BIBLE_BOOK_LIST.join("|") +
+  ")\\s+\\d+(?::\\d+(?:\\s*[-\\u2013\\u2014]\\s*\\d+)?)?(?:\\s*[,;]\\s*\\d+(?::\\d+)?)*)",
+  "g");
+
+/* A label at the very start of a line, e.g. "Introduction: ..." */
+var LABEL_RE = /^(\s*(?:\d{1,2}[.)]\s*)?[A-Z][A-Za-z0-9 '&()\/\-]{2,44}):(\s)/;
+
+/* Bolding inside ONE line of plain text. */
+function boldenText(t){
+  var s = t.replace(SCRIPTURE_RE, function(m){ return "<b class='sc-ref'>" + m + "</b>"; });
+  s = s.replace(LABEL_RE, function(all, lab, sp){ return "<b class='lbl'>" + lab + ":</b>" + sp; });
+  return s;
+}
+
+/* Tag-aware walk: bold only inside TEXT nodes, never inside tags we insert. */
+function applyInlineBold(s){
+  if(s === null || s === undefined) return s;
+  var str = String(s), out = "", i = 0;
+  while(i < str.length){
+    if(str.charAt(i) === '<'){
+      var j = str.indexOf('>', i);
+      if(j === -1){ out += str.substring(i); break; }
+      out += str.substring(i, j + 1);
+      i = j + 1;
+    } else {
+      var k = str.indexOf('<', i);
+      if(k === -1){ k = str.length; }
+      out += boldenText(str.substring(i, k));
+      i = k;
+    }
+  }
+  return out;
+}
+
+/* ---------- Turn plain AI text into structured blocks ---------- */
+var SECTION_WORDS = ["introduction","conclusion","prayer","prayers","prayer points","application",
+  "life application","life application today","questions","questions for discussion","discussion questions",
+  "summary","main teaching","main message","main points","key points","key notes","the scriptures",
+  "scripture","scriptures","background","teaching","today","memory verse","memory verses",
+  "objectives","aims","note","notes","what the bible says","what this means for us today",
+  "the big idea","closing","reflection"];
+
+function classifyLine(raw){
+  var t = String(raw).replace(/\s+$/, "");
+  var trimmed = t.trim();
+  if(!trimmed){ return { type: "blank" }; }
+  var m;
+  if((m = trimmed.match(/^(#{1,6})\s+(.*)$/))){
+    return { type: "h", level: Math.min(m[1].length, 3), text: m[2].trim() };
+  }
+  if(/^[=\-_*~]{3,}$/.test(trimmed)){ return { type: "hr" }; }
+  if((m = trimmed.match(/^(\d{1,2})[.)]\s+(.*)$/))){
+    var inner = m[2].trim();
+    var innerCore = inner.replace(/[:：]\s*$/, "");
+    if(SECTION_WORDS.indexOf(innerCore.toLowerCase()) !== -1 && innerCore.length <= 60){
+      return { type: "h", level: 2, text: innerCore, num: m[1] };
+    }
+    return { type: "li", ordered: true, num: m[1], text: inner };
+  }
+  if((m = trimmed.match(/^[-*\u2022\u25cf\u27a4\u2013\u2014]\s+(.*)$/))){
+    return { type: "li", ordered: false, text: m[1].trim() };
+  }
+  var core = trimmed.replace(/[:：]\s*$/, "").trim();
+  if(SECTION_WORDS.indexOf(core.toLowerCase()) !== -1 && core.length <= 60){
+    return { type: "h", level: 2, text: core };
+  }
+  var isCaps = core.length >= 3 && core.length <= 80 && /[A-Z]/.test(core) &&
+               !/[a-z]/.test(core) && /^[A-Z0-9 ,'&()\/\-\.!?:;]+$/.test(core);
+  if(isCaps){ return { type: "h", level: 2, text: core }; }
+  if(/[:：]\s*$/.test(trimmed) && trimmed.split(/\s+/).length <= 10 && trimmed.length <= 70){
+    return { type: "h", level: 3, text: core };
+  }
+  return { type: "p", text: trimmed };
+}
+
+function parseContentBlocks(text){
+  var lines = String(text || "").split(/\r?\n/);
+  var blocks = [];
+  for(var i=0;i<lines.length;i++){ blocks.push(classifyLine(lines[i])); }
+  while(blocks.length && blocks[0].type === "blank"){ blocks.shift(); }
+  while(blocks.length && blocks[blocks.length-1].type === "blank"){ blocks.pop(); }
+  return blocks;
+}
+
+/* ---------- Blocks -> HTML ---------- */
+function blocksToHtml(blocks){
+  var out = "", listOpen = null, pendingNums = [];
+  function closeList(){
+    if(listOpen === "ol"){ out += "</ol>"; }
+    else if(listOpen === "ul"){ out += "</ul>"; }
+    listOpen = null;
+  }
+  for(var i=0;i<blocks.length;i++){
+    var b = blocks[i];
+    if(b.type === "blank"){ closeList(); continue; }
+    if(b.type === "hr"){ closeList(); out += "<hr>"; continue; }
+    if(b.type === "h"){
+      closeList();
+      var lv = b.level === 1 ? 1 : (b.level === 3 ? 3 : 2);
+      var numPrefix = b.num ? (b.num + ". ") : "";
+      out += "<h" + lv + " class='doc-h" + lv + "'>" + applyInlineBold(escapeHtml(numPrefix + b.text)) + "</h" + lv + ">";
+      continue;
+    }
+    if(b.type === "li"){
+      var want = b.ordered ? "ol" : "ul";
+      if(listOpen !== want){ closeList(); out += (want === "ol" ? "<ol>" : "<ul>"); listOpen = want; }
+      out += "<li>" + applyInlineBold(escapeHtml(b.text)) + "</li>";
+      continue;
+    }
+    closeList();
+    out += "<p>" + applyInlineBold(escapeHtml(b.text)) + "</p>";
+  }
+  closeList();
+  return out;
+}
+
+/* ---------- Blocks -> plain text (with clear, readable headings) ---------- */
+function underlineFor(text, ch){
+  var n = Math.min(String(text).length, 76);
+  var line = "";
+  for(var i=0;i<n;i++){ line += ch; }
+  return line;
+}
+
+function blocksToText(blocks){
+  var out = "", listOpen = null, counter = 0;
+  function closeList(){ listOpen = null; counter = 0; }
+  for(var i=0;i<blocks.length;i++){
+    var b = blocks[i];
+    if(b.type === "blank"){ closeList(); if(out && out.charAt(out.length-1) !== "\n"){ out += "\n"; } continue; }
+    if(b.type === "hr"){ closeList(); out += "\n" + underlineFor("", "-") + "\n"; continue; }
+    if(b.type === "h"){
+      closeList();
+      var title = b.text.toUpperCase();
+      out += "\n" + title + "\n" + underlineFor(title, b.level === 1 ? "=" : "-") + "\n";
+      continue;
+    }
+    if(b.type === "li"){
+      if(b.ordered){
+        if(listOpen !== "ol"){ listOpen = "ol"; counter = 0; out += "\n"; }
+        counter++;
+        out += "  " + counter + ". " + b.text + "\n";
+      } else {
+        if(listOpen !== "ul"){ listOpen = "ul"; out += "\n"; }
+        out += "  - " + b.text + "\n";
+      }
+      continue;
+    }
+    closeList();
+    out += b.text + "\n";
+  }
+  return out.replace(/\n{3,}/g, "\n\n").replace(/^\s+/, "").replace(/\s+$/, "") + "\n";
+}
+
+/* ---------- The downloadable HTML document ---------- */
+var DOC_CSS = [
+"  *{box-sizing:border-box;}",
+"  body{margin:0;background:#f3f0e7;font-family:Georgia,'Times New Roman',serif;color:#1a1a1a;}",
+"  .wrap{max-width:820px;margin:0 auto;background:#fff;padding:34px 30px 48px;box-shadow:0 2px 14px rgba(0,0,0,.08);}",
+"  .hd{text-align:center;border-bottom:3px solid #d4af37;padding-bottom:14px;margin-bottom:22px;}",
+"  .mname{font-size:22px;font-weight:800;color:#0b2e59;letter-spacing:.02em;}",
+"  .sub{font-size:13px;color:#d4af37;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-top:3px;}",
+"  .sub2{font-size:12px;color:#666;margin-top:4px;}",
+"  h1.t{font-size:27px;line-height:1.3;color:#0b2e59;text-align:center;margin:0 0 6px;font-weight:800;}",
+"  .meta{text-align:center;font-size:13px;color:#777;margin-bottom:26px;}",
+"  .body{font-size:17.5px;line-height:1.78;}",
+"  .body p{margin:0 0 15px;}",
+"  .doc-h1{font-size:23px;font-weight:800;color:#0b2e59;margin:30px 0 12px;line-height:1.3;border-bottom:2px solid #e6dcbb;padding-bottom:6px;}",
+"  .doc-h2{font-size:19.5px;font-weight:800;color:#123f73;margin:26px 0 10px;line-height:1.35;text-transform:uppercase;letter-spacing:.03em;}",
+"  .doc-h3{font-size:18px;font-weight:800;color:#2a2a2a;margin:20px 0 8px;line-height:1.4;}",
+"  .body ol,.body ul{margin:10px 0 18px 30px;padding:0;}",
+"  .body li{margin-bottom:9px;line-height:1.72;}",
+"  .body hr{border:0;border-top:1px solid #e2dbc8;margin:24px 0;}",
+"  b.sc-ref{color:#0b2e59;font-weight:800;}",
+"  b.lbl{color:#0b2e59;font-weight:800;}",
+"  .ft{margin-top:38px;padding-top:16px;border-top:3px solid #d4af37;text-align:center;font-size:13px;color:#666;font-weight:700;}",
+"  @media (max-width:640px){ .wrap{padding:20px 15px 32px;} .body{font-size:17px;line-height:1.72;} h1.t{font-size:22px;} .doc-h1{font-size:20px;} .doc-h2{font-size:18px;} }",
+"  @media print{ body{background:#fff;} .wrap{box-shadow:none;max-width:100%;padding:0;} .body{font-size:12.5pt;line-height:1.6;} }",
+"  @page{ margin:16mm; }"
+].join("\n");
+
+function buildDocHtml(title, text){
+  var blocks = parseContentBlocks(text);
+  var safeTitle = escapeHtml(title || "Bible Study");
+  var body = blocksToHtml(blocks);
+  var head = "";
+  head += "<!DOCTYPE html>\n<html lang='en'>\n<head>\n<meta charset='utf-8'>\n";
+  head += "<meta name='viewport' content='width=device-width, initial-scale=1'>\n";
+  head += "<title>" + safeTitle + "</title>\n<style>\n" + DOC_CSS + "\n</style>\n</head>\n<body>\n<div class='wrap'>\n";
+  head += "<div class='hd'><div class='mname'>" + escapeHtml(settings.ministryName) + "</div>";
+  head += "<div class='sub'>Daily Sermons &middot; Bible Study</div>";
+  head += "<div class='sub2'>Apostle: Frank Tembo &middot; Prayerline: " + escapeHtml(settings.contact) + "</div></div>\n";
+  head += "<h1 class='t'>" + safeTitle + "</h1>\n";
+  head += "<div class='meta'>" + escapeHtml(displayDate(todayKey())) + "</div>\n";
+  head += "<div class='body'>\n" + body + "\n</div>\n";
+  head += "<div class='ft'>" + escapeHtml(settings.ministryName) + " &middot; Daily Sermons</div>\n";
+  head += "</div>\n</body>\n</html>";
+  return head;
+}
+
+function buildDocText(title, text){
+  var blocks = parseContentBlocks(text);
+  var bar = "==================================================";
+  var t = "";
+  t += String(settings.ministryName || "").toUpperCase() + "\nDAILY SERMONS\n";
+  t += "Apostle: Frank Tembo\nPrayerline: " + (settings.contact || "") + "\n\n";
+  t += bar + "\n" + (title || "Bible Study").toUpperCase() + "\n" + bar + "\n";
+  t += "Date: " + displayDate(todayKey()) + "\n" + bar + "\n\n";
+  t += blocksToText(blocks);
+  t += "\n" + bar + "\n" + String(settings.ministryName || "") + " - Daily Sermons\n";
+  return t;
+}
+
+/* ---------- A sensible title for a piece of content ---------- */
+function guessContentTitle(text){
+  var blocks = parseContentBlocks(text);
+  var i;
+  for(i=0;i<blocks.length;i++){
+    if(blocks[i].type === "h" && blocks[i].text && blocks[i].title !== ""){
+      var cand = blocks[i].text.replace(/[:：]\s*$/, "").trim();
+      if(cand.length >= 4 && cand.length <= 90 && SECTION_WORDS.indexOf(cand.toLowerCase()) === -1){ return cand; }
+    }
+  }
+  for(i=0;i<blocks.length;i++){
+    if(blocks[i].type === "p" && blocks[i].text && blocks[i].text.length >= 10){
+      var p = blocks[i].text.replace(/[:：]\s*$/, "").trim();
+      if(p.length > 90){ p = p.substring(0, 87).trim() + "..."; }
+      return p;
+    }
+  }
+  for(i=0;i<blocks.length;i++){
+    if(blocks[i].text){ return blocks[i].text.substring(0, 80); }
+  }
+  return "Bible Study";
+}
+
+/* ---------- Detect what the user asked for ---------- */
+function detectDownloadIntent(msg){
+  var s = String(msg || "").toLowerCase();
+  var wantTxt = /downloadable\s+(text|txt|word)\s*file|download\s+(as\s+)?(a\s+)?(txt|text)|\btxt\s*file|\.txt\b|text\s+file/.test(s);
+  var wantHtml = /downloadable\s+html\s*file|download\s+(as\s+)?(a\s+)?html|\bhtml\s*file|\.html\b/.test(s);
+  return { txt: wantTxt, html: wantHtml, any: (wantTxt || wantHtml) };
+}
+
+function wantedFormatsLabel(intent){
+  var both = [];
+  if(intent.txt){ both.push("TEXT (.txt)"); }
+  if(intent.html){ both.push("HTML (.html)"); }
+  if(!both.length){ both.push("TEXT (.txt)"); both.push("HTML (.html)"); }
+  return both.join(" and ");
+}
+
+/* ---------- Store of everything the AI has generated ---------- */
+window.__aiDocs = [];
+window.__aiDocHashes = {};
+
+function simpleHash(s){
+  var str = String(s), h = 0;
+  for(var i=0;i<str.length;i++){ h = ((h << 5) - h + str.charCodeAt(i)) | 0; }
+  return "h" + h + "_" + str.length;
+}
+
+function pushAIDoc(entry){
+  if(!entry || !entry.text || String(entry.text).trim().length < 40) return null;
+  var hash = simpleHash(entry.text);
+  if(window.__aiDocHashes[hash]) return window.__aiDocHashes[hash];
+  var doc = {
+    id: "doc" + Date.now() + "_" + Math.floor(Math.random()*1000),
+    title: entry.title || guessContentTitle(entry.text),
+    text: String(entry.text),
+    kind: entry.kind || "content",
+    intent: entry.intent || { txt:false, html:false, any:false },
+    ts: new Date()
+  };
+  window.__aiDocs.unshift(doc);
+  window.__aiDocHashes[hash] = doc;
+  if(window.__aiDocs.length > 60){ window.__aiDocs.pop(); }
+  return doc;
+}
+
+function latestAIDoc(){ return (window.__aiDocs && window.__aiDocs.length) ? window.__aiDocs[0] : null; }
+
+/* ---------- The small "Generated content ready" panel ---------- */
+function updateAIDocPanel(){
+  var panel = document.getElementById('aiDocPanel');
+  if(!panel) return;
+  var doc = latestAIDoc();
+  if(!doc){ panel.classList.add('hidden'); return; }
+  panel.classList.remove('hidden');
+  var t = document.getElementById('aiDocTitle');
+  var m = document.getElementById('aiDocMeta');
+  if(t){ t.textContent = doc.title; }
+  if(m){
+    var when = "just now";
+    try{ when = doc.ts.toLocaleTimeString(); }catch(e){}
+    m.textContent = "\u00b7 " + (doc.kind === "sermon" ? "sermon draft" : "generated content") + " \u00b7 " + when;
+  }
+}
+
+/* ---------- The download actions ---------- */
+function downloadDocAs(doc, kind){
+  if(!doc || !doc.text){ alert("There is nothing to download yet. Ask the AI to write something first."); return; }
+  var name = slug(doc.title || "bible-study");
+  if(!name){ name = "bible-study"; }
+  if(kind === "html"){
+    var html = buildDocHtml(doc.title, doc.text);
+    downloadBlob(new Blob([html], { type: "text/html;charset=utf-8" }), name + ".html");
+  } else {
+    var txt = buildDocText(doc.title, doc.text);
+    downloadBlob(new Blob(["\ufeff", txt], { type: "text/plain;charset=utf-8" }), name + ".txt");
+  }
+}
+
+function downloadLastAIContent(kind){
+  var doc = latestAIDoc();
+  if(!doc){
+    alert("The AI has not written anything yet. Ask it to create a Bible study or a message first, then download it here.");
+    return;
+  }
+  downloadDocAs(doc, kind);
+}
+
+function copyLastAIContent(){
+  var doc = latestAIDoc();
+  if(!doc){ alert("There is nothing to copy yet."); return; }
+  copyText(doc.text);
+}
+
+function downloadAIChatMessage(aiIndex, kind){
+  var msg = null;
+  try{ msg = aiChatHistory[aiIndex]; }catch(e){}
+  if(!msg || !msg.text){ alert("That message is no longer available."); return; }
+  var doc = window.__aiDocHashes[simpleHash(msg.text)] || null;
+  if(!doc){
+    doc = { title: guessContentTitle(msg.text), text: msg.text, kind: "content", intent: { txt:false, html:false, any:false } };
+  }
+  downloadDocAs(doc, kind);
+}
+
+/* ---------- Put download buttons under every AI reply ---------- */
+function decorateAIBubbles(){
+  var host = document.getElementById('aiChatMessages');
+  if(!host) return;
+  var aiIndices = [];
+  for(var i=0;i<aiChatHistory.length;i++){
+    if(aiChatHistory[i].role === 'ai'){ aiIndices.push(i); }
+  }
+  var bubbles = host.querySelectorAll(':scope > div.justify-start');
+  for(var b=0;b<bubbles.length;b++){
+    var wrap = bubbles[b];
+    if(wrap.getAttribute('data-dl') === '1'){ continue; }
+    var idx = aiIndices[b];
+    if(idx === undefined){ continue; }
+    var m = aiChatHistory[idx];
+    if(!m || !m.text){ continue; }
+    var txt = String(m.text).trim();
+    if(txt.length < 60){ continue; }
+    if(txt.indexOf('\u2026thinking') === 0 || txt.indexOf('...thinking') === 0){ continue; }
+    wrap.setAttribute('data-dl', '1');
+    try{ wrap.style.flexDirection = 'column'; wrap.style.alignItems = 'flex-start'; }catch(e){}
+    var bar = document.createElement('div');
+    bar.className = 'ai-dl-bar';
+    bar.innerHTML =
+      "<span class='ai-dl-lbl'>\u2b07 Download this:</span>" +
+      "<button class='btn btn-navy btn-sm' type='button'>TEXT (.txt)</button>" +
+      "<button class='btn btn-gold btn-sm' type='button'>HTML (.html)</button>" +
+      "<button class='btn btn-outline btn-sm' type='button'>Copy</button>";
+    var btns = bar.querySelectorAll('button');
+    (function(capturedIdx){
+      btns[0].onclick = function(){ downloadAIChatMessage(capturedIdx, 'txt'); };
+      btns[1].onclick = function(){ downloadAIChatMessage(capturedIdx, 'html'); };
+      btns[2].onclick = function(){ copyText(aiChatHistory[capturedIdx].text); };
+    })(idx);
+    wrap.appendChild(bar);
+  }
+  /* remember every long AI reply as a downloadable document */
+  for(var k=0;k<aiChatHistory.length;k++){
+    if(aiChatHistory[k].role !== 'ai'){ continue; }
+    var t2 = String(aiChatHistory[k].text || '').trim();
+    if(t2.length < 60){ continue; }
+    if(t2.indexOf('\u2026thinking') === 0 || t2.indexOf('...thinking') === 0){ continue; }
+    pushAIDoc({ title: guessContentTitle(t2), text: t2, kind: 'content' });
+  }
+  updateAIDocPanel();
+}
+
+/* Wrap the chat renderer so the buttons appear on every reply. */
+(function(){
+  var prev = window.renderAIChat;
+  if(typeof prev !== 'function'){ return; }
+  window.renderAIChat = function(){
+    var r = prev.apply(this, arguments);
+    try{ decorateAIBubbles(); }catch(e){}
+    return r;
+  };
+  window.renderAIChat_ui = window.renderAIChat;
+  try{ renderAIChat = window.renderAIChat; }catch(e){}
+})();
+
+/* ---------- Remember sermon drafts the AI loads into the Editor ---------- */
+(function(){
+  var prev = window.loadSermonJsonIntoEditor;
+  if(typeof prev !== 'function'){ return; }
+  window.loadSermonJsonIntoEditor = function(data){
+    try{
+      if(data && typeof data === 'object'){
+        var clean = data;
+        try{ clean = sanitizeSermonData(data); }catch(e){ clean = data; }
+        var obj = {
+          date: todayKey(), preacher: settings.defaultPreacher, title: clean.title || "Sermon",
+          scriptures: clean.scriptures || "", verseText: "", objectives: clean.objectives || "",
+          introduction: clean.introduction || "", mainMessage: (clean.mainMessage || { type:'general', text:'' }),
+          summary: clean.summary || [], summaryNumbered: true, conclusion: clean.conclusion || "",
+          prayerPoints: clean.prayerPoints || []
+        };
+        pushAIDoc({ title: clean.title || "Sermon draft", text: generateSermonText(obj), kind: "sermon" });
+      }
+    }catch(e){}
+    return prev.apply(this, arguments);
+  };
+  try{ loadSermonJsonIntoEditor = window.loadSermonJsonIntoEditor; }catch(e){}
+})();
+
+/* ---------- Bold scriptures in the AI chat bubbles ---------- */
+(function(){
+  var prev = window.formatAIText;
+  if(typeof prev !== 'function'){ return; }
+  window.formatAIText = function(t){ return applyInlineBold(prev.apply(this, arguments)); };
+  try{ formatAIText = window.formatAIText; }catch(e){}
+})();
+
+/* ---------- Bold scriptures in the sermon preview + exports ---------- */
+(function(){
+  var prev = window.mainMessageHtml;
+  if(typeof prev !== 'function'){ return; }
+  window.mainMessageHtml = function(mm){ return applyInlineBold(prev.apply(this, arguments)); };
+  try{ mainMessageHtml = window.mainMessageHtml; }catch(e){}
+})();
+
+/* Expose for testing. */
+window.__downloadKit = {
+  detectIntent: detectDownloadIntent,
+  parse: parseContentBlocks,
+  toHtml: buildDocHtml,
+  toText: buildDocText,
+  bold: applyInlineBold,
+  docs: function(){ return window.__aiDocs; }
+};
+
+</script>
+<script>
+/* ==== part8_full_detail.js ==== */
+/* =========================================================
+   DAILY SERMONS - UPGRADE PACK - PART 8
+   FULL-DETAIL ANSWERS + DOWNLOAD-AWARE INSTRUCTIONS
+   The AI must always write COMPLETE, detailed content
+   (never a summary) with bold, clear headings.
+   ========================================================= */
+
+/* ---------- Always write in full detail ---------- */
+var FULL_DETAIL_RULES =
+  "\n\nALWAYS WRITE IN FULL DETAIL. Write a thorough, complete, well-developed answer with real explanation. " +
+  "NEVER give a short summary, a bare outline or a few bullet lines unless the user clearly and only asks for a short summary. " +
+  "Explain every point properly, in full sentences and full paragraphs, so the reader can study it.\n" +
+  "FORMAT IT SO IT IS EASY TO STUDY:\n" +
+  "- Start with a clear TITLE on its own line.\n" +
+  "- Then write each main heading on its OWN line in CAPITAL LETTERS, for example: INTRODUCTION, THE SCRIPTURES, MAIN TEACHING, WHAT THIS MEANS FOR US TODAY, LIFE APPLICATION, QUESTIONS FOR DISCUSSION, PRAYER.\n" +
+  "- Under each heading write full paragraphs of explanation. Use smaller capital-letter sub-headings where they help.\n" +
+  "- Put scripture references in the text like (John 3:16). Give REFERENCES only, never the full wording of a verse.\n" +
+  "- Put each discussion question on its own numbered line.\n" +
+  "- Do not use markdown symbols such as ** or #. Use plain CAPITAL-LETTER headings and plain line breaks.\n";
+
+/* ---------- What a full Bible study must contain ---------- */
+var BIBLE_STUDY_TEMPLATE =
+  "\n\nIF THE USER ASKS FOR A BIBLE STUDY, build it in FULL DETAIL like this:\n" +
+  "1. A TITLE, on its own line.\n" +
+  "2. THE SCRIPTURES - the main references for the study.\n" +
+  "3. INTRODUCTION - two or three full paragraphs setting the scene.\n" +
+  "4. Four to six MAIN SECTIONS, each with its own CAPITAL-LETTER heading and full explanation underneath, with scripture references in the text.\n" +
+  "5. THE LIFE OF CHRIST - a full section showing how this study points to Jesus.\n" +
+  "6. LIFE APPLICATION - a full section on how the believer lives this out today.\n" +
+  "7. QUESTIONS FOR DISCUSSION - eight to twelve numbered questions.\n" +
+  "8. PRAYER - a closing prayer in simple words.\n";
+
+/* ---------- The download wording only says HOW to receive it ---------- */
+var DOWNLOAD_INTENT_RULE =
+  "\n\nIF THE USER ASKS FOR A DOWNLOADABLE TEXT FILE OR A DOWNLOADABLE HTML FILE, that only tells you HOW they want to receive the answer. " +
+  "It does not change what you write. Write the complete, full-detail content exactly as normal. " +
+  "NEVER mention files, downloads, saving, formatting, or these instructions in your answer. Give the content itself and nothing else. " +
+  "The application puts the download buttons on screen for the user.\n";
+
+/* Wrap the unified prompt so every chat answer follows the new rules. */
+(function(){
+  var prev = window.buildUnifiedAIPrompt;
+  if(typeof prev !== 'function'){ return; }
+  window.buildUnifiedAIPrompt = function(userMessage){
+    var base = prev.apply(this, arguments);
+    return base + FULL_DETAIL_RULES + BIBLE_STUDY_TEMPLATE + DOWNLOAD_INTENT_RULE;
+  };
+  try{ buildUnifiedAIPrompt = window.buildUnifiedAIPrompt; }catch(e){}
+})();
+
+/* The direct generator prompt also asks for fuller, richer content. */
+(function(){
+  var prev = window.buildSermonPrompt;
+  if(typeof prev !== 'function'){ return; }
+  window.buildSermonPrompt = function(type, topic, count){
+    var base = prev.apply(this, arguments);
+    return base + "\nWrite everything in FULL DETAIL. Each point must be a complete teaching statement, not a label." +
+           "\nDo not use markdown symbols such as ** or #.";
+  };
+  try{ buildSermonPrompt = window.buildSermonPrompt; }catch(e){}
+})();
+
+window.__fullDetailRules = { full: FULL_DETAIL_RULES, study: BIBLE_STUDY_TEMPLATE, intent: DOWNLOAD_INTENT_RULE };
 
 </script>
 </body>
