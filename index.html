@@ -126,6 +126,7 @@
   .reading.rt-night .bv.sel{background:#4b4220; box-shadow:0 0 0 1.5px #b8962e;}
   #f_versetext{font-family:Georgia,'Noto Serif',serif; font-size:16px; line-height:1.6;}
   #bibleOverlay .card{margin-top:12px;}
+  #bToast{position:fixed; left:50%; bottom:22px; transform:translateX(-50%); max-width:92%; background:var(--navy-dark); color:#fff; padding:10px 16px; border-radius:12px; z-index:95; font-size:14px; line-height:1.4; display:none; box-shadow:0 6px 20px rgba(0,0,0,.3); font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;}
 </style>
 </head>
 <body class="font-ui">
@@ -493,7 +494,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
         <div>
           <label>Insert into</label>
-          <select id="b_target">
+          <select id="b_target" onchange="bibleTargetChanged()">
             <option value="last">Where I was typing in the Editor</option>
             <option value="verse">Scripture text box (also fills Scriptures)</option>
             <option value="main">Main message</option>
@@ -501,6 +502,10 @@
             <option value="concl">Conclusion</option>
             <option value="ai">AI chat box</option>
           </select>
+          <div id="b_libpart_wrap" style="display:none;" class="mt-2">
+            <label>Add to which part</label>
+            <select id="b_libpart"></select>
+          </div>
         </div>
         <div class="text-sm" style="color:#444;">
           <label class="!normal-case !font-normal flex items-center gap-2"><input type="checkbox" id="b_nums" style="width:auto;"> Show verse numbers</label>
@@ -552,7 +557,7 @@
 
 <div id="bibleOverlay" style="display:none; position:fixed; left:0; top:0; right:0; bottom:0; z-index:70; background:#f5f1e4; overflow-y:auto; -webkit-overflow-scrolling:touch;">
   <div style="position:sticky; top:0; z-index:2; background:var(--navy); color:#fff; display:flex; align-items:center; justify-content:space-between; padding:10px 14px;">
-    <b>&#128214; Bible &mdash; insert into your sermon</b>
+    <b id="bibleOverlayTitle">&#128214; Bible &mdash; insert into your sermon</b>
     <button class="btn btn-gold btn-sm" onclick="closeBibleOverlay()">&#10005; Close</button>
   </div>
   <div id="bibleOverlayBody" class="px-3 pb-8"></div>
@@ -1286,6 +1291,7 @@ function renderLibrary(){
     right.className = "flex gap-1 flex-wrap";
     right.appendChild(mkBtn("View", function(id){ return function(){ currentPreviewId=id; switchTab('preview'); renderPreview(id); }; }(s.id)));
     right.appendChild(mkBtn("Edit", function(id){ return function(){ editSermon(id); }; }(s.id)));
+    right.appendChild(mkBtn("\uD83D\uDCD6 Insert verse", function(id){ return function(){ openBibleForSermon(id); }; }(s.id), "btn-gold"));
     right.appendChild(mkBtn("Copy", function(id){ return function(){ copyText(generateSermonText(sermons[id])); }; }(s.id)));
     right.appendChild(mkBtn("Delete", function(id){ return function(){ deleteSermon(id); }; }(s.id), "btn-danger"));
     row.appendChild(left); row.appendChild(right);
@@ -3115,17 +3121,20 @@ function bibleInsert(){
   var msg = bEl('bibleInsertMsg');
   var pick = biblePick();
   if(!pick){ msg.className = "text-sm mt-2 sb-bad"; msg.textContent = "Open a chapter first, then tap the verses to insert."; return; }
+  if(bibleLibId){ bibleLibInsert(pick); return; }
   var body = bibleBuildText(pick.verses, bEl('b_nums').checked);
   var res = bibleInsertInto(bEl('b_target').value, body, pick.label, pick.version, bEl('b_incref').checked, bEl('b_quote').checked);
   if(!res.ok){ msg.className = "text-sm mt-2 sb-bad"; msg.textContent = res.error; return; }
   msg.className = "text-sm mt-2 sb-ok";
   msg.innerHTML = "✔ Inserted <b>" + escapeHtml(pick.label) + "</b> (" + escapeHtml(pick.version) + ") into " + escapeHtml(res.where) + ". " +
     (bibleOverlayOpen ? "" : '<button class="btn btn-outline btn-sm" onclick="switchTab(\'editor\')">Open Editor</button>');
+  bibleToast("✔ Inserted " + escapeHtml(pick.label) + " (" + escapeHtml(pick.version) + ") into " + escapeHtml(res.where) + ".");
   if(bibleOverlayOpen && bEl('b_autoclose').checked){ closeBibleOverlay(); }
 }
 function bibleUseInEditor(){
   var pick = biblePick();
   if(!pick){ alert("Open a chapter first."); return; }
+  if(bibleLibId){ bibleLibSetScripture(pick); return; }
   var cur = bEl('f_scriptures').value.trim();
   if(cur && cur !== pick.label && !confirm("Replace the Scriptures and verse text in the Editor with " + pick.label + "?")){ return; }
   bEl('f_scriptures').value = pick.label;
@@ -3152,14 +3161,15 @@ function bibleAskAI(){
 }
 
 /* ---------- open the Bible while writing (overlay inside the Editor) ---------- */
-function openBibleOverlay(){
+function openBibleOverlay(libId){
   var card = bEl('bibleCard'), body = bEl('bibleOverlayBody');
   if(!card || !body){ return; }
   body.appendChild(card);
   bEl('bibleOverlay').style.display = "block";
   bibleOverlayOpen = true;
   document.body.style.overflow = "hidden";
-  bEl('b_target').value = "last";
+  bibleLibId = (typeof libId === "string") ? libId : "";
+  bibleApplyMode();
   bEl('b_autoclose_wrap').style.display = "";
   bEl('bibleInsertMsg').innerHTML = "";
   bibleOnOpen();
@@ -3173,6 +3183,8 @@ function closeBibleOverlay(){
   bibleOverlayOpen = false;
   document.body.style.overflow = "";
   bEl('b_autoclose_wrap').style.display = "none";
+  bibleLibId = "";
+  bibleApplyMode();
 }
 
 /* ---------- search ---------- */
@@ -3279,6 +3291,172 @@ function bibleDownload(){
   }
   paint("Starting…");
   pump();
+}
+
+
+/* ---------- INSERT A VERSE INTO A SAVED SERMON (from the Library) ---------- */
+var bibleLibId = "";
+var BIBLE_TARGET_HTML = null;
+var bibleToastTimer = null;
+
+function bibleToast(html){
+  var t = bEl('bToast');
+  if(!t){ t = document.createElement('div'); t.id = 'bToast'; document.body.appendChild(t); }
+  t.innerHTML = html;
+  t.style.display = "block";
+  if(bibleToastTimer){ clearTimeout(bibleToastTimer); }
+  bibleToastTimer = setTimeout(function(){ t.style.display = "none"; }, 5000);
+}
+function appendPara(text, add){
+  var t = String(text || "").replace(/\s+$/, "");
+  return t ? (t + "\n\n" + add) : add;
+}
+function appendLineTo(text, add){
+  var t = String(text || "").replace(/\s+$/, "");
+  return t ? (t + "\n" + add) : add;
+}
+function mergeRefLabel(cur, label){
+  cur = String(cur || "").replace(/^\s+|\s+$/g, "");
+  if(!cur){ return label; }
+  return cur.indexOf(label) === -1 ? (cur + "; " + label) : cur;
+}
+function openBibleForSermon(id){
+  if(!sermons[id]){ alert("That sermon could not be found."); return; }
+  openBibleOverlay(id);
+}
+function bibleApplyMode(){
+  var sel = bEl('b_target'), title = bEl('bibleOverlayTitle');
+  if(!sel){ return; }
+  if(BIBLE_TARGET_HTML === null){ BIBLE_TARGET_HTML = sel.innerHTML; }
+  if(bibleLibId && sermons[bibleLibId]){
+    sel.innerHTML = '<option value="lib_verse">Scripture text (also adds to Scriptures)</option>' +
+      '<option value="lib_main">Main message (added at the end)</option>' +
+      '<option value="lib_intro">Introduction (added at the end)</option>' +
+      '<option value="lib_concl">Conclusion (added at the end)</option>';
+    sel.value = "lib_verse";
+    if(title){ title.textContent = "\uD83D\uDCD6 Insert a verse into: " + sermons[bibleLibId].title; }
+  } else {
+    bibleLibId = "";
+    sel.innerHTML = BIBLE_TARGET_HTML;
+    sel.value = "last";
+    if(title){ title.textContent = "\uD83D\uDCD6 Bible \u2014 insert into your sermon"; }
+  }
+  bibleTargetChanged();
+}
+function bibleTargetChanged(){
+  var wrap = bEl('b_libpart_wrap'), sel = bEl('b_libpart');
+  if(!wrap || !sel){ return; }
+  var s = bibleLibId ? sermons[bibleLibId] : null;
+  var show = false, i, arr, h = "", label;
+  if(s && bEl('b_target').value === "lib_main" && s.mainMessage){
+    if(s.mainMessage.type === "series"){
+      arr = s.mainMessage.parts || [];
+      for(i=0;i<arr.length;i++){ label = (i + 1) + ". " + (arr[i].title || ("Part " + (i + 1))); h += '<option value="' + i + '">' + escapeHtml(label) + '</option>'; }
+      show = arr.length > 0;
+      sel.innerHTML = h;
+      if(show){ sel.value = String(arr.length - 1); }
+    } else if(s.mainMessage.type === "book"){
+      arr = s.mainMessage.chapters || [];
+      for(i=0;i<arr.length;i++){ label = (arr[i].chapter || ("Chapter " + (i + 1))) + (arr[i].heading ? " - " + arr[i].heading : ""); h += '<option value="' + i + '">' + escapeHtml(label) + '</option>'; }
+      show = arr.length > 0;
+      sel.innerHTML = h;
+      if(show){ sel.value = String(arr.length - 1); }
+    }
+  }
+  wrap.style.display = show ? "" : "none";
+}
+function bibleLibAddMain(s, prose){
+  var mm = s.mainMessage || (s.mainMessage = {type:"passage", text:""});
+  var t = mm.type, idx, arr;
+  if(t === "short"){
+    mm.points = mm.points || [];
+    if(mm.points.length >= 50){ return null; }
+    mm.points.push(prose);
+    return "the Main message (new point " + mm.points.length + ")";
+  }
+  if(t === "series" || t === "book"){
+    arr = (t === "series") ? (mm.parts || (mm.parts = [])) : (mm.chapters || (mm.chapters = []));
+    if(!arr.length){ arr.push(t === "series" ? {title:"Part 1", points:[]} : {chapter:"Chapter 1", heading:"", points:[]}); }
+    idx = parseInt(bEl('b_libpart').value, 10);
+    if(isNaN(idx) || idx < 0 || idx >= arr.length){ idx = arr.length - 1; }
+    arr[idx].points = arr[idx].points || [];
+    arr[idx].points.push(prose);
+    return "the Main message (" + (t === "series" ? (arr[idx].title || ("Part " + (idx + 1))) : (arr[idx].chapter || ("Chapter " + (idx + 1)))) + ")";
+  }
+  if(t === "devotional"){
+    mm.dev_scripture = appendPara(mm.dev_scripture, prose);
+    return "the Devotional scripture section";
+  }
+  mm.text = appendPara(mm.text, prose);
+  return "the Main message";
+}
+function bibleLibSaved(s, id){
+  s.updatedAt = new Date().getTime();
+  sermons[id] = s;
+  saveLocalSermons();
+  try{ pushToFirebase(s); }catch(e){}
+  renderLibrary();
+  if(currentPreviewId === id){ renderPreview(id); }
+}
+function bibleLibFinish(msgHtml, plainWhere){
+  var msg = bEl('bibleInsertMsg');
+  msg.className = "text-sm mt-2 sb-ok";
+  msg.innerHTML = msgHtml;
+  bibleToast(msgHtml);
+  if(bibleOverlayOpen && bEl('b_autoclose').checked){ closeBibleOverlay(); }
+}
+function bibleLibInsert(pick){
+  var id = bibleLibId, s = sermons[id], msg = bEl('bibleInsertMsg');
+  if(!s){ msg.className = "text-sm mt-2 sb-bad"; msg.textContent = "That sermon could not be found."; return; }
+  var nums = bEl('b_nums').checked, quote = bEl('b_quote').checked, incRef = bEl('b_incref').checked;
+  var body = bibleBuildText(pick.verses, nums), target = bEl('b_target').value;
+  var head = "✔ Inserted <b>" + escapeHtml(pick.label) + "</b> (" + escapeHtml(pick.version) + ") ";
+  var res, where, prose, i;
+
+  /* the sermon is open in the Editor: put the verse in the Editor copy so unsaved edits are not lost */
+  if(bEl('f_id').value === id){
+    var map = {lib_verse:"verse", lib_main:"main", lib_intro:"intro", lib_concl:"concl"};
+    res = bibleInsertInto(map[target], body, pick.label, pick.version, incRef, quote);
+    if(!res.ok){ msg.className = "text-sm mt-2 sb-bad"; msg.textContent = res.error; return; }
+    bibleLibFinish(head + "into " + escapeHtml(res.where) + " of this sermon, which is open in the Editor. Tap <b>Save Sermon</b> there to keep it.");
+    return;
+  }
+
+  prose = bibleProse(body, pick.label, pick.version, incRef, quote);
+  if(target === "lib_verse"){
+    s.verseText = appendLineTo(s.verseText, body);
+    s.scriptures = mergeRefLabel(s.scriptures, pick.label);
+    for(i=0;i<BIBLE_VERSIONS.length;i++){ if(BIBLE_VERSIONS[i].code === pick.version){ s.bibleVersion = pick.version; } }
+    where = "the Scripture text";
+  } else if(target === "lib_intro"){
+    s.introduction = appendPara(s.introduction, prose);
+    where = "the Introduction";
+  } else if(target === "lib_concl"){
+    s.conclusion = appendPara(s.conclusion, prose);
+    where = "the Conclusion";
+  } else {
+    where = bibleLibAddMain(s, prose);
+    if(where === null){ msg.className = "text-sm mt-2 sb-bad"; msg.textContent = "This message already has 50 points (the maximum). Choose another place."; return; }
+  }
+  bibleLibSaved(s, id);
+  bibleLibFinish(head + "into " + escapeHtml(where) + " of “" + escapeHtml(s.title) + "” and saved it.");
+}
+function bibleLibSetScripture(pick){
+  var id = bibleLibId, s = sermons[id], i;
+  if(!s){ return; }
+  var body = bibleBuildText(pick.verses, bEl('b_nums').checked);
+  if(!confirm("Replace the Scriptures and verse text of “" + s.title + "” with " + pick.label + "?")){ return; }
+  if(bEl('f_id').value === id){
+    bEl('f_scriptures').value = pick.label;
+    bEl('f_versetext').value = body;
+    bibleLibFinish("✔ Set <b>" + escapeHtml(pick.label) + "</b> as the Scripture of this sermon in the Editor. Tap <b>Save Sermon</b> there to keep it.");
+    return;
+  }
+  s.scriptures = pick.label;
+  s.verseText = body;
+  for(i=0;i<BIBLE_VERSIONS.length;i++){ if(BIBLE_VERSIONS[i].code === pick.version){ s.bibleVersion = pick.version; } }
+  bibleLibSaved(s, id);
+  bibleLibFinish("✔ Set <b>" + escapeHtml(pick.label) + "</b> as the Scripture of “" + escapeHtml(s.title) + "” and saved it.");
 }
 
 /* ---------- START-UP for the new features ---------- */
