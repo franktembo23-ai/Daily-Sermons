@@ -119,6 +119,13 @@
   .ai-card small{display:block; font-weight:400; color:#6b6b6b; font-size:12.5px; margin-top:3px;}
   .ai-card:hover{border-color:var(--navy);}
   #passageText,#generalText{font-family:Georgia,'Noto Serif','Times New Roman',serif; font-size:17px; line-height:1.7;}
+  /* ===== UPDATE: Bible reader ===== */
+  .reading .bv{cursor:pointer; padding:3px 7px; border-radius:8px; transition:background .12s;}
+  .reading .bv.sel{background:#fbe9a6; box-shadow:0 0 0 1.5px #e0b93a;}
+  .reading.rt-sepia .bv.sel{background:#ecd9a0;}
+  .reading.rt-night .bv.sel{background:#4b4220; box-shadow:0 0 0 1.5px #b8962e;}
+  #f_versetext{font-family:Georgia,'Noto Serif',serif; font-size:16px; line-height:1.6;}
+  #bibleOverlay .card{margin-top:12px;}
 </style>
 </head>
 <body class="font-ui">
@@ -230,8 +237,9 @@
       </div>
     </div>
     <div class="mt-3 flex items-center gap-2">
-      <input type="text" id="f_versetext" placeholder="Scripture text (paste manually, or fetch below)" class="flex-1">
+      <textarea id="f_versetext" rows="3" placeholder="Scripture text (paste manually, fetch, or insert from the Bible)" class="flex-1"></textarea>
       <button class="btn btn-outline btn-sm" onclick="fetchScripture()">🔎 Fetch</button>
+      <button class="btn btn-gold btn-sm" onclick="openBibleOverlay()">📖 Bible</button>
     </div>
     <div id="scriptureStatus" class="text-xs text-gray-600 mt-1"></div>
     <div class="text-xs text-gray-500 mt-1">Free lookup (no key needed) works for KJV, WEB, ASV, BBE, ERV, GNT, NLV and also NKJV, NIV, NLT, ESV, AMP through the free Bible API. Type a reference like John 3:16 or Psalms 23:1-6, then tap Fetch. For Chinyanja, paste the text manually.</div>
@@ -260,6 +268,7 @@
       <option value="devotional">(e) Devotional Message</option>
       <option value="general">(f) General Format</option>
     </select>
+    <div class="mb-2"><button class="btn btn-gold btn-sm" onclick="openBibleOverlay()">📖 Insert verses from the Bible</button> <span class="text-xs text-gray-500">Click in the message where you want the verse, then tap this button.</span></div>
     <div id="mainMessageEditor" class="border border-dashed rounded-lg p-3" style="border-color:#d8d2c2;"></div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
@@ -427,20 +436,32 @@
 
 <!-- ============ BIBLE TAB (Free Bible API) ============ -->
 <div id="tab-bible" class="tab-panel hidden">
-  <div class="card p-5 mt-4">
-    <div class="font-bold text-lg" style="color:var(--navy-dark);">&#128214; Free Bible</div>
-    <div class="text-xs text-gray-500 mb-3">Powered by free Bible APIs &mdash; no key needed. Every chapter you open is saved on this device, so it opens again without internet.</div>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-      <div>
+ <div id="bibleHome">
+  <div class="card p-5 mt-4" id="bibleCard">
+    <div class="flex items-center justify-between flex-wrap gap-2">
+      <div class="font-bold text-lg" style="color:var(--navy-dark);">&#128214; Free Bible</div>
+      <div id="bibleOfflineInfo" class="text-xs text-gray-500"></div>
+    </div>
+    <div class="text-xs text-gray-500 mb-3">Choose a version, a book and a chapter, then tap the verses you want. No key needed. Every chapter you open is saved on this device.</div>
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+      <div class="col-span-2 md:col-span-1">
         <label>Version</label>
-        <select id="b_version"></select>
+        <select id="b_version" onchange="bibleVersionChanged()"></select>
       </div>
-      <div class="md:col-span-2">
-        <label>Reference</label>
-        <div class="flex gap-2">
-          <input type="text" id="b_ref" placeholder="e.g. John 3:1-7, Psalms 23, 1 Corinthians 13:4-7" onkeydown="bibleRefKey(event)">
-          <button class="btn btn-gold" onclick="bibleRead()">Read</button>
-        </div>
+      <div>
+        <label>Book</label>
+        <select id="b_book" onchange="bibleBookChanged()"></select>
+      </div>
+      <div>
+        <label>Chapter</label>
+        <select id="b_chapter" onchange="bibleChapterChanged()"></select>
+      </div>
+    </div>
+    <div class="mt-3">
+      <label>Or type a reference</label>
+      <div class="flex gap-2">
+        <input type="text" id="b_ref" placeholder="e.g. John 3:1-7, Psalms 23, 1 Corinthians 13:4-7" onkeydown="bibleRefKey(event)">
+        <button class="btn btn-gold" onclick="bibleRead()">Go</button>
       </div>
     </div>
     <div class="flex items-center justify-between flex-wrap gap-2 mt-3">
@@ -458,12 +479,43 @@
         </select>
       </div>
     </div>
-    <div id="bibleStatus" class="text-xs text-gray-500 mt-2"></div>
+    <div id="bibleStatus" class="text-xs text-gray-600 mt-2"></div>
     <div id="bibleText" class="reading rt-day mt-2"></div>
-    <div class="flex gap-2 flex-wrap mt-3">
-      <button class="btn btn-navy btn-sm" onclick="bibleUseInEditor()">&#9997;&#65039; Use in Editor</button>
-      <button class="btn btn-outline btn-sm" onclick="bibleCopy()">&#128203; Copy</button>
-      <button class="btn btn-outline btn-sm" onclick="bibleAskAI()">&#129302; Explain simply (AI)</button>
+
+    <div class="mt-3 p-3 rounded-lg" style="background:#faf6e8; border:1px solid #eadfb8;">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div id="bibleSelInfo" class="text-sm" style="color:#444;"></div>
+        <div class="flex gap-2">
+          <button class="btn btn-outline btn-sm" onclick="bibleSelectAll()">Select all</button>
+          <button class="btn btn-outline btn-sm" onclick="bibleClearSel()">Clear</button>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+        <div>
+          <label>Insert into</label>
+          <select id="b_target">
+            <option value="last">Where I was typing in the Editor</option>
+            <option value="verse">Scripture text box (also fills Scriptures)</option>
+            <option value="main">Main message</option>
+            <option value="intro">Introduction</option>
+            <option value="concl">Conclusion</option>
+            <option value="ai">AI chat box</option>
+          </select>
+        </div>
+        <div class="text-sm" style="color:#444;">
+          <label class="!normal-case !font-normal flex items-center gap-2"><input type="checkbox" id="b_nums" style="width:auto;"> Show verse numbers</label>
+          <label class="!normal-case !font-normal flex items-center gap-2"><input type="checkbox" id="b_quote" checked style="width:auto;"> Put the verse in quotation marks</label>
+          <label class="!normal-case !font-normal flex items-center gap-2"><input type="checkbox" id="b_incref" checked style="width:auto;"> Add the reference, e.g. (John 3:16, NKJV)</label>
+          <label id="b_autoclose_wrap" class="!normal-case !font-normal flex items-center gap-2" style="display:none;"><input type="checkbox" id="b_autoclose" checked style="width:auto;"> Close this window after inserting</label>
+        </div>
+      </div>
+      <div class="flex gap-2 flex-wrap mt-3">
+        <button class="btn btn-gold" onclick="bibleInsert()">&#10133; Insert</button>
+        <button class="btn btn-navy btn-sm" onclick="bibleUseInEditor()">&#9997;&#65039; Set as Scripture (replace)</button>
+        <button class="btn btn-outline btn-sm" onclick="bibleCopy()">&#128203; Copy</button>
+        <button class="btn btn-outline btn-sm" onclick="bibleAskAI()">&#129302; Explain simply (AI)</button>
+      </div>
+      <div id="bibleInsertMsg" class="text-sm mt-2"></div>
     </div>
 
     <div class="mt-5 divider-gold rounded"></div>
@@ -475,8 +527,35 @@
       </div>
       <div id="bibleSearchResults" class="mt-3 space-y-2"></div>
     </div>
+
+    <div class="mt-5 divider-gold rounded"></div>
+    <div class="mt-4">
+      <div class="font-bold" style="color:var(--navy-dark);">&#11015; Read without internet</div>
+      <div class="text-xs text-gray-500 mb-2">Save chapters of the chosen version on this device. Needs internet only once. The rest of the time the Bible opens without data.</div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <select id="b_dlscope" style="width:auto;">
+          <option value="book">This book</option>
+          <option value="nt">New Testament</option>
+          <option value="ot">Old Testament</option>
+          <option value="all">Whole Bible</option>
+        </select>
+        <button class="btn btn-gold btn-sm" id="b_dlbtn" onclick="bibleDownload()">Save for offline</button>
+        <button class="btn btn-danger btn-sm" id="b_dlcancel" onclick="bibleDownloadCancel()" style="display:none;">Stop</button>
+      </div>
+      <div class="sb-meter"><div id="b_dlbar" style="width:0%;"></div></div>
+      <div id="b_dlstatus" class="text-xs text-gray-600"></div>
+    </div>
     <div class="text-xs text-gray-400 mt-4">Versions such as NIV, NLT, ESV, NKJV and AMP are copyrighted. They are shown here for personal reading and sermon preparation &mdash; check the publisher's permission before printing or selling them. Chinyanja is not in the free API yet: paste it manually in the Editor.</div>
   </div>
+ </div>
+</div>
+
+<div id="bibleOverlay" style="display:none; position:fixed; left:0; top:0; right:0; bottom:0; z-index:70; background:#f5f1e4; overflow-y:auto; -webkit-overflow-scrolling:touch;">
+  <div style="position:sticky; top:0; z-index:2; background:var(--navy); color:#fff; display:flex; align-items:center; justify-content:space-between; padding:10px 14px;">
+    <b>&#128214; Bible &mdash; insert into your sermon</b>
+    <button class="btn btn-gold btn-sm" onclick="closeBibleOverlay()">&#10005; Close</button>
+  </div>
+  <div id="bibleOverlayBody" class="px-3 pb-8"></div>
 </div>
 
 <!-- ============ AI BIBLE TAB (single unified chat panel) ============ -->
@@ -505,12 +584,23 @@
       </div>
       <div class="flex items-center gap-2 flex-wrap mt-2">
         <span id="aiLenRow" class="flex items-center gap-2">
-          <span class="text-xs font-bold text-gray-500 font-ui">LENGTH</span>
+          <span class="text-xs font-bold text-gray-500 font-ui">LENGTH (words)</span>
           <select id="aiLength" style="width:auto; padding:4px 8px; font-size:14px;" onchange="onAILengthChange(this.value)">
-            <option value="short">Short (about 600 words)</option>
-            <option value="medium">Medium (about 1000 words)</option>
-            <option value="long">Long (about 1600 words)</option>
-            <option value="xl">Very long (about 2400 words)</option>
+            <option value="100">100 words</option>
+            <option value="150">150 words</option>
+            <option value="200">200 words</option>
+            <option value="250">250 words</option>
+            <option value="300">300 words</option>
+            <option value="350">350 words</option>
+            <option value="400">400 words</option>
+            <option value="450">450 words</option>
+            <option value="500">500 words</option>
+            <option value="550">550 words</option>
+            <option value="600">600 words</option>
+            <option value="650">650 words</option>
+            <option value="1000">1000 words</option>
+            <option value="1600">1600 words</option>
+            <option value="2400">2400 words</option>
           </select>
         </span>
         <span id="aiModeHint" class="text-xs text-gray-500 font-ui"></span>
@@ -694,6 +784,7 @@ function switchTab(name){
   if(name==='library'){ renderLibrary(); if(typeof vaultRender === 'function'){ vaultRender(); } }
   if(name==='settings'){ updateStorageStats(); if(typeof renderConnections === 'function'){ renderConnections(); sbRefreshStats(); } }
   if(name==='ai' && typeof updateAIBadges === 'function'){ updateAIBadges(); }
+  if(name==='bible' && typeof bibleOnOpen === 'function'){ bibleOnOpen(); }
 }
 
 /* ---------- HEADER DATE ---------- */
@@ -2716,23 +2807,89 @@ function findBibleContext(msg){
   });
 }
 
-/* ---------- BIBLE TAB UI ---------- */
+/* ---------- BIBLE READER + INSERT (book/chapter picker, tap verses, insert at cursor, offline) ---------- */
+var bibleSel = {};
+var bibleLastField = null;
+var bibleLoading = false;
+var bibleReq = 0;
+var biblePendingKey = "";
+var bibleOverlayOpen = false;
+var bibleDl = {running:false, cancel:false};
+var SUP_DIGITS = {"0":"\u2070","1":"\u00B9","2":"\u00B2","3":"\u00B3","4":"\u2074","5":"\u2075","6":"\u2076","7":"\u2077","8":"\u2078","9":"\u2079"};
+
+function bEl(id){ return document.getElementById(id); }
+function supNum(n){ return String(n).replace(/\d/g, function(d){ return SUP_DIGITS[d]; }); }
 function bibleRefKey(e){ if(e.key === "Enter"){ e.preventDefault(); bibleRead(); } }
 function bibleSearchKey(e){ if(e.key === "Enter"){ e.preventDefault(); bibleSearch(); } }
+
 function populateBibleVersionSelect(){
-  var sel = document.getElementById('b_version');
+  var sel = bEl('b_version');
   if(!sel){ return; }
-  var i, h = "";
+  var i, h = "", want;
   for(i=0;i<BIBLE_VERSIONS.length;i++){
     if(BIBLE_VERSIONS[i].freeApi){ h += '<option value="' + BIBLE_VERSIONS[i].code + '">' + escapeHtml(BIBLE_VERSIONS[i].code + " - " + BIBLE_VERSIONS[i].name) + '</option>'; }
   }
   sel.innerHTML = h;
-  sel.value = (BOLLS_CODES[settings.defaultVersion] || BIBLEAPI_CODES[settings.defaultVersion]) ? settings.defaultVersion : "KJV";
+  want = settings.bibleVersion;
+  if(!(want && (BOLLS_CODES[want] || BIBLEAPI_CODES[want]))){ want = settings.defaultVersion; }
+  if(!(want && (BOLLS_CODES[want] || BIBLEAPI_CODES[want]))){ want = "KJV"; }
+  sel.value = want;
 }
+function buildBibleBookSelect(){
+  var sel = bEl('b_book'), i, h;
+  if(!sel || sel.options.length){ return; }
+  h = '<optgroup label="Old Testament">';
+  for(i=0;i<39;i++){ h += '<option value="' + (i+1) + '">' + escapeHtml(BIBLE_BOOKS[i][0]) + '</option>'; }
+  h += '</optgroup><optgroup label="New Testament">';
+  for(i=39;i<66;i++){ h += '<option value="' + (i+1) + '">' + escapeHtml(BIBLE_BOOKS[i][0]) + '</option>'; }
+  h += '</optgroup>';
+  sel.innerHTML = h;
+  sel.value = "43";
+  buildChapterSelect(43, 1);
+}
+function buildChapterSelect(bookId, chapter){
+  var sel = bEl('b_chapter'), n = BIBLE_BOOKS[bookId-1][2], c, h = "";
+  if(!sel){ return; }
+  for(c=1;c<=n;c++){ h += '<option value="' + c + '">' + c + '</option>'; }
+  sel.innerHTML = h;
+  sel.value = String(chapter || 1);
+}
+function syncBiblePickers(bookId, chapter){
+  var bs = bEl('b_book');
+  if(!bs){ return; }
+  if(bs.value !== String(bookId)){ bs.value = String(bookId); buildChapterSelect(bookId, chapter); }
+  else{
+    var cs = bEl('b_chapter');
+    if(cs.options.length !== BIBLE_BOOKS[bookId-1][2]){ buildChapterSelect(bookId, chapter); }
+    else{ cs.value = String(chapter); }
+  }
+}
+function bibleVersionChanged(){
+  settings.bibleVersion = bEl('b_version').value;
+  persistSettings();
+  bibleRefreshOfflineInfo();
+  if(bibleCur.refText){ bEl('b_ref').value = bibleCur.refText; }
+  else{ bibleReadFromPickers(); return; }
+  bibleRead();
+}
+function bibleReadFromPickers(){
+  var b = parseInt(bEl('b_book').value, 10) || 43, c = parseInt(bEl('b_chapter').value, 10) || 1;
+  bEl('b_ref').value = BIBLE_BOOKS[b-1][0] + " " + c;
+  bibleCur.first = null;
+  bibleRead();
+}
+function bibleBookChanged(){
+  var b = parseInt(bEl('b_book').value, 10) || 43;
+  buildChapterSelect(b, 1);
+  bibleReadFromPickers();
+}
+function bibleChapterChanged(){ bibleReadFromPickers(); }
+
+function bibleVerseKey(v){ return v.bookId + ":" + v.chapter + ":" + v.verse; }
 function renderBiblePassage(p){
-  var box = document.getElementById('bibleText');
+  var box = bEl('bibleText');
   var h = '<div class="bible-title">' + escapeHtml(p.label) + ' <span class="bible-ver">' + escapeHtml(p.version) + '</span></div>';
-  var i, v, multi = false, lastKey = "", key;
+  var i, v, multi = false, lastKey = "", key, vk;
   for(i=1;i<p.verses.length;i++){
     if(p.verses[i].chapter !== p.verses[0].chapter || p.verses[i].bookId !== p.verses[0].bookId){ multi = true; break; }
   }
@@ -2740,75 +2897,289 @@ function renderBiblePassage(p){
     v = p.verses[i];
     key = v.bookName + " " + v.chapter;
     if(multi && key !== lastKey){ h += '<div class="bible-chap">' + escapeHtml(key) + '</div>'; lastKey = key; }
-    h += '<p class="bv"><b class="vn">' + v.verse + '</b> ' + escapeHtml(v.text) + '</p>';
+    vk = bibleVerseKey(v);
+    h += '<p class="bv' + (bibleSel[vk] ? ' sel' : '') + '" data-k="' + vk + '" onclick="bibleToggleVerse(this)"><b class="vn">' + v.verse + '</b> ' + escapeHtml(v.text) + '</p>';
   }
   box.innerHTML = h;
 }
+function bibleToggleVerse(el){
+  var k = el.getAttribute('data-k');
+  if(bibleSel[k]){ delete bibleSel[k]; el.className = "bv"; }
+  else{ bibleSel[k] = true; el.className = "bv sel"; }
+  bibleUpdateSelInfo();
+}
+function bibleSelectedVerses(){
+  var out = [], i, v, any = false;
+  for(i=0;i<bibleCur.verses.length;i++){ if(bibleSel[bibleVerseKey(bibleCur.verses[i])]){ any = true; break; } }
+  for(i=0;i<bibleCur.verses.length;i++){
+    v = bibleCur.verses[i];
+    if(!any || bibleSel[bibleVerseKey(v)]){ out.push(v); }
+  }
+  return {verses:out, usedAll:!any};
+}
+function bibleRefLabel(verses){
+  var groups = [], g = null, i, v, last, out = [], parts, k;
+  for(i=0;i<verses.length;i++){
+    v = verses[i];
+    if(!g || g.bookId !== v.bookId || g.chapter !== v.chapter){ g = {bookId:v.bookId, bookName:v.bookName, chapter:v.chapter, ranges:[]}; groups.push(g); }
+    last = g.ranges[g.ranges.length - 1];
+    if(last && v.verse === last[1] + 1){ last[1] = v.verse; }
+    else if(!(last && v.verse === last[1])){ g.ranges.push([v.verse, v.verse]); }
+  }
+  for(i=0;i<groups.length;i++){
+    parts = [];
+    for(k=0;k<groups[i].ranges.length;k++){ parts.push(groups[i].ranges[k][0] === groups[i].ranges[k][1] ? String(groups[i].ranges[k][0]) : groups[i].ranges[k][0] + "-" + groups[i].ranges[k][1]); }
+    out.push(groups[i].bookName + " " + groups[i].chapter + ":" + parts.join(","));
+  }
+  return out.join("; ");
+}
+function bibleBuildText(verses, withNums){
+  var out = [], i;
+  for(i=0;i<verses.length;i++){ out.push((withNums ? supNum(verses[i].verse) + " " : "") + verses[i].text); }
+  return out.join(" ");
+}
+function biblePick(){
+  var s = bibleSelectedVerses();
+  if(!s.verses.length){ return null; }
+  return {verses:s.verses, usedAll:s.usedAll, label:(s.usedAll ? bibleCur.label : bibleRefLabel(s.verses)), version:bibleCur.version};
+}
+function bibleUpdateSelInfo(){
+  var el = bEl('bibleSelInfo');
+  if(!el){ return; }
+  var n = 0, k;
+  for(k in bibleSel){ if(bibleSel.hasOwnProperty(k)){ n++; } }
+  if(!bibleCur.verses.length){ el.textContent = "Open a chapter, then tap the verses you want."; return; }
+  if(!n){ el.textContent = "Tap verses to select them. If you select none, the whole passage shown is used."; return; }
+  var s = bibleSelectedVerses();
+  el.innerHTML = "<b>" + s.verses.length + " verse(s) selected:</b> " + escapeHtml(bibleRefLabel(s.verses));
+}
+function bibleSelectAll(){
+  var i;
+  for(i=0;i<bibleCur.verses.length;i++){ bibleSel[bibleVerseKey(bibleCur.verses[i])] = true; }
+  var ps = bEl('bibleText').querySelectorAll('.bv');
+  for(i=0;i<ps.length;i++){ ps[i].className = "bv sel"; }
+  bibleUpdateSelInfo();
+}
+function bibleClearSel(){
+  bibleSel = {};
+  var ps = bEl('bibleText').querySelectorAll('.bv'), i;
+  for(i=0;i<ps.length;i++){ ps[i].className = "bv"; }
+  bibleUpdateSelInfo();
+}
+function bibleSetStatus(html, cls){
+  var st = bEl('bibleStatus');
+  st.className = "text-xs mt-2 " + (cls || "text-gray-600");
+  st.innerHTML = html;
+}
+
 function bibleRead(){
-  var ver = document.getElementById('b_version').value;
-  var ref = document.getElementById('b_ref').value.replace(/^\s+|\s+$/g, "");
-  var st = document.getElementById('bibleStatus');
-  if(!ref){ st.innerText = "Type a reference first, for example John 3:16."; return; }
-  st.innerText = "Loading " + ref + " (" + ver + ") …";
+  var ver = bEl('b_version').value;
+  var ref = bEl('b_ref').value.replace(/^\s+|\s+$/g, "");
+  if(!ref){ bibleSetStatus("Choose a book and chapter above, or type a reference such as John 3:16."); return; }
+  var myReq = ++bibleReq;
+  bibleLoading = true;
+  bibleSetStatus("Loading " + escapeHtml(ref) + " (" + escapeHtml(ver) + ") …");
   getPassage(ver, ref).then(function(p){
+    if(myReq !== bibleReq){ return; }
+    bibleLoading = false;
     bibleCur = p;
+    bibleCur.refText = ref;
+    bibleSel = {};
+    if(biblePendingKey){ bibleSel[biblePendingKey] = true; }
     renderBiblePassage(p);
-    st.innerText = "✔ " + p.label + " · " + ver + " · from " + p.sources.join(", ");
+    if(biblePendingKey){
+      var tgt = bEl('bibleText').querySelector('[data-k="' + biblePendingKey + '"]');
+      if(tgt && tgt.scrollIntoView){ tgt.scrollIntoView(); }
+      biblePendingKey = "";
+    }
+    syncBiblePickers(p.first.bookId, p.first.chapter);
+    settings.bibleBook = p.first.bookId; settings.bibleChapter = p.first.chapter; settings.bibleVersion = ver;
+    persistSettings();
+    bibleSetStatus("✔ " + escapeHtml(p.label) + " · " + escapeHtml(ver) + " · from " + escapeHtml(p.sources.join(", ")), "text-gray-600");
+    bibleUpdateSelInfo();
     if(p.sources.join(",").indexOf("saved") === -1){ setBibleConn("ok", "Last reading came from " + p.sources.join(", ") + "."); }
+    bibleRefreshOfflineInfo();
   }).catch(function(err){
-    document.getElementById('bibleText').innerHTML = "";
-    st.innerText = "⚠ " + err.message;
+    if(myReq !== bibleReq){ return; }
+    bibleLoading = false;
+    bEl('bibleText').innerHTML = "";
+    bibleCur = {version:"", label:"", plain:"", verses:[], first:null};
+    bibleSetStatus("⚠ " + escapeHtml(err.message) + ' <button class="btn btn-outline btn-sm" onclick="bibleRead()">Try again</button> <button class="btn btn-outline btn-sm" onclick="testBibleConnection()">Test connection</button>', "sb-bad");
+    bibleUpdateSelInfo();
   });
 }
 function bibleStep(dir){
   var base = bibleCur.first;
   if(!base){
-    var r = parseOneRef(document.getElementById('b_ref').value);
+    var r = parseOneRef(bEl('b_ref').value);
     if(r && !r.error){ base = {bookId:r.bookId, chapter:r.segs[0].chapter}; }
+    else{ base = {bookId:parseInt(bEl('b_book').value, 10) || 43, chapter:parseInt(bEl('b_chapter').value, 10) || 1}; }
   }
-  if(!base){ document.getElementById('bibleStatus').innerText = "Read a chapter first, then use Previous / Next."; return; }
   var book = base.bookId, ch = base.chapter + dir;
   if(ch > BIBLE_BOOKS[book-1][2]){ if(book < 66){ book++; ch = 1; } else { ch = base.chapter; } }
   else if(ch < 1){ if(book > 1){ book--; ch = BIBLE_BOOKS[book-1][2]; } else { ch = 1; } }
-  document.getElementById('b_ref').value = BIBLE_BOOKS[book-1][0] + " " + ch;
+  bEl('b_ref').value = BIBLE_BOOKS[book-1][0] + " " + ch;
   bibleCur.first = null;
   bibleRead();
 }
 function bibleOpenRef(bookId, chapter, verse){
-  document.getElementById('b_ref').value = BIBLE_BOOKS[bookId-1][0] + " " + chapter + (verse ? ":" + verse : "");
+  bEl('b_ref').value = BIBLE_BOOKS[bookId-1][0] + " " + chapter;
+  biblePendingKey = verse ? (bookId + ":" + chapter + ":" + verse) : "";
   bibleCur.first = null;
   bibleRead();
-  var t = document.getElementById('bibleText');
+  var t = bEl('bibleText');
   if(t && t.scrollIntoView){ t.scrollIntoView(); }
 }
+function bibleOnOpen(){
+  buildBibleBookSelect();
+  bibleRefreshOfflineInfo();
+  if(!bibleCur.verses.length && !bibleLoading){
+    var b = settings.bibleBook || 43, c = settings.bibleChapter || 1;
+    if(b < 1 || b > 66){ b = 43; c = 1; }
+    syncBiblePickers(b, c);
+    bEl('b_ref').value = BIBLE_BOOKS[b-1][0] + " " + c;
+    bibleRead();
+  } else { bibleUpdateSelInfo(); }
+}
+
+/* ---------- insert ---------- */
+function bibleInitFocusTracking(){
+  document.addEventListener("focusin", function(e){
+    var t = e.target, ed = bEl('tab-editor');
+    if(!t || !ed || !ed.contains(t)){ return; }
+    if(t.tagName === "TEXTAREA" || (t.tagName === "INPUT" && (t.type === "text" || !t.type))){ bibleLastField = t; }
+  });
+}
+function fireInput(el){
+  var ev;
+  try{ ev = new Event("input", {bubbles:true}); }
+  catch(e){ ev = document.createEvent("Event"); ev.initEvent("input", true, true); }
+  el.dispatchEvent(ev);
+}
+function insertAtCursor(el, text){
+  var val = el.value || "", start = el.selectionStart, end = el.selectionEnd;
+  if(typeof start !== "number" || start > val.length){ start = end = val.length; }
+  if(typeof end !== "number"){ end = start; }
+  var before = val.substring(0, start), after = val.substring(end);
+  var pre = (before && !/\s$/.test(before)) ? " " : "";
+  var post = (after && !/^\s/.test(after)) ? " " : "";
+  el.value = before + pre + text + post + after;
+  var pos = (before + pre + text).length;
+  try{ el.selectionStart = pos; el.selectionEnd = pos; }catch(e){}
+  fireInput(el);
+}
+function bibleMainField(){
+  var host = bEl('mainMessageEditor');
+  if(bibleLastField && host && host.contains(bibleLastField) && document.body.contains(bibleLastField)){ return bibleLastField; }
+  var f = bEl('passageText') || bEl('generalText');
+  if(f){ return f; }
+  return host ? host.querySelector("textarea, input[type=text]") : null;
+}
+function bibleProse(body, label, ver, incRef, quote){
+  return (quote ? "\u201C" + body + "\u201D" : body) + (incRef ? " (" + label + ", " + ver + ")" : "");
+}
+function bibleInsertVerseBox(body, label, ver){
+  var vt = bEl('f_versetext'), sc = bEl('f_scriptures'), vs = bEl('f_bibleversion'), i;
+  vt.value = vt.value.replace(/\s+$/, "") ? (vt.value.replace(/\s+$/, "") + "\n" + body) : body;
+  fireInput(vt);
+  var cur = sc.value.replace(/^\s+|\s+$/g, "");
+  if(!cur){ sc.value = label; }
+  else if(cur.indexOf(label) === -1){ sc.value = cur + "; " + label; }
+  for(i=0;i<vs.options.length;i++){ if(vs.options[i].value === ver){ vs.value = ver; } }
+  return "the Scripture text box";
+}
+function bibleInsertInto(target, body, label, ver, incRef, quote){
+  var field = null, where = "";
+  if(target === "verse"){ return {ok:true, where:bibleInsertVerseBox(body, label, ver)}; }
+  if(target === "last"){
+    if(bibleLastField && document.body.contains(bibleLastField)){
+      if(bibleLastField.id === "f_versetext"){ return {ok:true, where:bibleInsertVerseBox(body, label, ver)}; }
+      if(bibleLastField.id === "f_scriptures"){
+        var cur = bibleLastField.value.replace(/^\s+|\s+$/g, "");
+        bibleLastField.value = cur ? (cur.indexOf(label) === -1 ? cur + "; " + label : cur) : label;
+        return {ok:true, where:"the Scriptures box"};
+      }
+      field = bibleLastField; where = "the place you were typing";
+    } else { field = bibleMainField(); where = "the Main message"; }
+  }
+  else if(target === "main"){ field = bibleMainField(); where = "the Main message"; }
+  else if(target === "intro"){ field = bEl('f_introduction'); where = "the Introduction"; }
+  else if(target === "concl"){ field = bEl('f_conclusion'); where = "the Conclusion"; }
+  else if(target === "ai"){ field = bEl('aiChatInput'); where = "the AI chat box"; }
+  if(!field){ return {ok:false, where:"", error:"I could not find a place to insert. Open the Editor and click where you want the verse."}; }
+  insertAtCursor(field, bibleProse(body, label, ver, incRef, quote));
+  if(field.id === "passageText" || field.id === "generalText"){ autoSizeMainText(); }
+  return {ok:true, where:where};
+}
+function bibleInsert(){
+  var msg = bEl('bibleInsertMsg');
+  var pick = biblePick();
+  if(!pick){ msg.className = "text-sm mt-2 sb-bad"; msg.textContent = "Open a chapter first, then tap the verses to insert."; return; }
+  var body = bibleBuildText(pick.verses, bEl('b_nums').checked);
+  var res = bibleInsertInto(bEl('b_target').value, body, pick.label, pick.version, bEl('b_incref').checked, bEl('b_quote').checked);
+  if(!res.ok){ msg.className = "text-sm mt-2 sb-bad"; msg.textContent = res.error; return; }
+  msg.className = "text-sm mt-2 sb-ok";
+  msg.innerHTML = "✔ Inserted <b>" + escapeHtml(pick.label) + "</b> (" + escapeHtml(pick.version) + ") into " + escapeHtml(res.where) + ". " +
+    (bibleOverlayOpen ? "" : '<button class="btn btn-outline btn-sm" onclick="switchTab(\'editor\')">Open Editor</button>');
+  if(bibleOverlayOpen && bEl('b_autoclose').checked){ closeBibleOverlay(); }
+}
 function bibleUseInEditor(){
-  if(!bibleCur.verses.length){ alert("Read a passage first."); return; }
-  var cur = document.getElementById('f_scriptures').value.trim();
-  if(cur && cur !== bibleCur.label && !confirm("Replace the Scriptures and verse text in the Editor with " + bibleCur.label + "?")){ return; }
-  document.getElementById('f_scriptures').value = bibleCur.label;
-  document.getElementById('f_versetext').value = bibleCur.plain;
-  var sel = document.getElementById('f_bibleversion'), i;
-  for(i=0;i<sel.options.length;i++){ if(sel.options[i].value === bibleCur.version){ sel.value = bibleCur.version; } }
+  var pick = biblePick();
+  if(!pick){ alert("Open a chapter first."); return; }
+  var cur = bEl('f_scriptures').value.trim();
+  if(cur && cur !== pick.label && !confirm("Replace the Scriptures and verse text in the Editor with " + pick.label + "?")){ return; }
+  bEl('f_scriptures').value = pick.label;
+  bEl('f_versetext').value = bibleBuildText(pick.verses, bEl('b_nums').checked);
+  var sel = bEl('f_bibleversion'), i;
+  for(i=0;i<sel.options.length;i++){ if(sel.options[i].value === pick.version){ sel.value = pick.version; } }
+  if(bibleOverlayOpen){ closeBibleOverlay(); }
   switchTab('editor');
 }
 function bibleCopy(){
-  if(!bibleCur.verses.length){ alert("Read a passage first."); return; }
-  var t = bibleCur.label + " (" + bibleCur.version + ")\n", i;
-  for(i=0;i<bibleCur.verses.length;i++){ t += bibleCur.verses[i].verse + " " + bibleCur.verses[i].text + "\n"; }
-  copyText(t);
+  var pick = biblePick();
+  if(!pick){ alert("Open a chapter first."); return; }
+  copyText(pick.label + " (" + pick.version + ")\n" + bibleBuildText(pick.verses, true));
 }
 function bibleAskAI(){
-  if(!bibleCur.verses.length){ alert("Read a passage first."); return; }
-  var inp = document.getElementById('aiChatInput');
-  inp.value = "Explain this Bible passage in simple English, showing how it points to Christ, what it means for the believer, and what it means for the church: " + bibleCur.label + " (" + bibleCur.version + ")";
+  var pick = biblePick();
+  if(!pick){ alert("Open a chapter first."); return; }
+  var inp = bEl('aiChatInput');
+  inp.value = "Explain this Bible passage in simple English, showing how it points to Christ, what it means for the believer, for the church, and for our prayer: " + pick.label + " (" + pick.version + ")";
+  if(bibleOverlayOpen){ closeBibleOverlay(); }
   setAIMode('interpret', true);
   switchTab('ai');
   inp.focus();
 }
+
+/* ---------- open the Bible while writing (overlay inside the Editor) ---------- */
+function openBibleOverlay(){
+  var card = bEl('bibleCard'), body = bEl('bibleOverlayBody');
+  if(!card || !body){ return; }
+  body.appendChild(card);
+  bEl('bibleOverlay').style.display = "block";
+  bibleOverlayOpen = true;
+  document.body.style.overflow = "hidden";
+  bEl('b_target').value = "last";
+  bEl('b_autoclose_wrap').style.display = "";
+  bEl('bibleInsertMsg').innerHTML = "";
+  bibleOnOpen();
+  applyReadingPrefs();
+  bEl('bibleOverlay').scrollTop = 0;
+}
+function closeBibleOverlay(){
+  var home = bEl('bibleHome'), card = bEl('bibleCard');
+  if(bibleOverlayOpen && home && card){ home.appendChild(card); }
+  bEl('bibleOverlay').style.display = "none";
+  bibleOverlayOpen = false;
+  document.body.style.overflow = "";
+  bEl('b_autoclose_wrap').style.display = "none";
+}
+
+/* ---------- search ---------- */
 function bibleSearch(){
-  var ver = document.getElementById('b_version').value;
-  var q = document.getElementById('b_search').value.replace(/^\s+|\s+$/g, "");
-  var host = document.getElementById('bibleSearchResults');
+  var ver = bEl('b_version').value;
+  var q = bEl('b_search').value.replace(/^\s+|\s+$/g, "");
+  var host = bEl('bibleSearchResults');
   if(!q){ host.innerHTML = '<div class="text-sm text-gray-400">Type a word or phrase first.</div>'; return; }
   var code = BOLLS_CODES[ver];
   if(!code){ host.innerHTML = '<div class="text-sm text-gray-500">Word search works for KJV, WEB, ASV, NKJV, NIV, NLT, ESV, AMP, ERV, GNT and NLV. Choose one of them above.</div>'; return; }
@@ -2829,6 +3200,87 @@ function bibleSearch(){
   });
 }
 
+/* ---------- save for offline ---------- */
+function bibleOfflineCount(ver){
+  return sbOpen().then(function(db){
+    return new Promise(function(resolve){
+      try{
+        var tx = db.transaction(["bible"], "readonly");
+        var rq = tx.objectStore("bible").count(IDBKeyRange.bound(ver + "|", ver + "|\uffff"));
+        rq.onsuccess = function(){ resolve(rq.result || 0); };
+        rq.onerror = function(){ resolve(0); };
+      }catch(e){ resolve(0); }
+    });
+  }).catch(function(){ return 0; });
+}
+function bibleRefreshOfflineInfo(){
+  var el = bEl('bibleOfflineInfo'), vs = bEl('b_version');
+  if(!el || !vs){ return; }
+  var ver = vs.value;
+  bibleOfflineCount(ver).then(function(n){
+    el.textContent = "Saved on this device: " + n + " of 1189 chapters (" + ver + ")";
+  });
+}
+function bibleDownloadCancel(){ bibleDl.cancel = true; }
+function bibleDownload(){
+  if(bibleDl.running){ return; }
+  if(!window.indexedDB){ alert("This browser cannot save the Bible for offline use."); return; }
+  var ver = bEl('b_version').value, scope = bEl('b_dlscope').value;
+  var isBolls = !!BOLLS_CODES[ver];
+  if(!isBolls && !BIBLEAPI_CODES[ver]){ alert(ver + " is not available in the free Bible API."); return; }
+  if(!isBolls && scope !== "book"){ alert(ver + " can only be saved one book at a time (its free server is slow). Choose 'This book'."); return; }
+  var from, to, b, c, pairs = [];
+  if(scope === "book"){ from = to = parseInt(bEl('b_book').value, 10) || 43; }
+  else if(scope === "ot"){ from = 1; to = 39; }
+  else if(scope === "nt"){ from = 40; to = 66; }
+  else{ from = 1; to = 66; }
+  for(b=from;b<=to;b++){ for(c=1;c<=BIBLE_BOOKS[b-1][2];c++){ pairs.push([b, c]); } }
+  if(pairs.length > 300 && !confirm("This will save about " + pairs.length + " chapters of " + ver + " on this device. It needs internet and may take several minutes. Continue?")){ return; }
+  var total = pairs.length, done = 0, saved = 0, failed = 0, streak = 0, active = 0, finished = false;
+  var conc = isBolls ? 3 : 1, gap = isBolls ? 120 : 2300;
+  bibleDl.running = true; bibleDl.cancel = false;
+  bEl('b_dlbtn').style.display = "none"; bEl('b_dlcancel').style.display = "";
+  var bar = bEl('b_dlbar'), st = bEl('b_dlstatus');
+  function paint(extra){
+    bar.style.width = (total ? Math.round(done * 100 / total) : 0) + "%";
+    st.textContent = extra || ("Saving " + ver + "… " + done + " of " + total + " chapters (" + Math.round(done * 100 / total) + "%)");
+  }
+  function finish(why){
+    if(finished){ return; }
+    finished = true;
+    bibleDl.running = false;
+    bEl('b_dlbtn').style.display = ""; bEl('b_dlcancel').style.display = "none";
+    bibleRefreshOfflineInfo(); sbRefreshStats();
+    paint(why);
+  }
+  function one(p){
+    var key = ver + "|" + p[0] + "|" + p[1];
+    return sbGetBibleCache(key).then(function(hit){
+      if(hit && hit.verses && hit.verses.length){ return "had"; }
+      return fetchBibleChapterNet(ver, p[0], p[1]).then(function(res){ sbPutBibleCache(key, res); return "new"; });
+    });
+  }
+  function pump(){
+    if(finished){ return; }
+    if(bibleDl.cancel){ if(active === 0){ finish("Stopped. " + saved + " new chapter(s) saved; they stay on this device."); } return; }
+    if(streak >= 10){ if(active === 0){ finish("Stopped because the internet or the Bible server is not answering. Chapters saved so far are kept. Try again later."); } return; }
+    while(active < conc && pairs.length){
+      (function(p){
+        active++;
+        one(p).then(function(r){ if(r === "new"){ saved++; } streak = 0; }).catch(function(){ failed++; streak++; }).then(function(){
+          done++; active--; paint();
+          setTimeout(pump, gap);
+        });
+      })(pairs.shift());
+    }
+    if(!pairs.length && active === 0){
+      finish(failed ? ("Finished with " + failed + " chapter(s) that could not load. " + saved + " new chapter(s) saved. Run it again to retry the missing ones.") : ("✔ Done. " + saved + " new chapter(s) saved. " + ver + " now opens without internet."));
+    }
+  }
+  paint("Starting…");
+  pump();
+}
+
 /* ---------- START-UP for the new features ---------- */
 function initNewFeatures(){
   try{
@@ -2836,6 +3288,8 @@ function initNewFeatures(){
     updateAIModelLabels();
     renderAIKeyState();
     populateBibleVersionSelect();
+    buildBibleBookSelect();
+    bibleInitFocusTracking();
     applyReadingPrefs();
     setAIConn(settings.geminiApiKey ? "saved" : "nokey", settings.geminiApiKey ? "Checking key…" : "");
     sbRenderStats();
@@ -2865,7 +3319,8 @@ var SOUND_TEACHING_RULES =
   "Read every passage in its context: who wrote it, to whom, when, why, and what kind of writing it is (law, story, poem, wisdom, prophecy, gospel, letter or apocalyptic). Let the plain meaning come first. " +
   "Let Scripture explain Scripture: use clear passages to explain the hard ones. Never twist a verse, never use hidden codes or numbers, and never invent new teachings or private revelations. " +
   "When faithful Christians honestly differ on a smaller matter, say so gently and keep to what is clear. " +
-  "Every message must lead people to Jesus Christ: He is the key that opens the whole Bible (Luke 24:27, 44; John 5:39).";
+  "Every message must lead people to Jesus Christ: He is the key that opens the whole Bible (Luke 24:27, 44; John 5:39). " +
+  "ACCURACY: Only cite scripture references you are sure about. Never invent verses, quotes, stories, statistics or Hebrew and Greek meanings. If you are not sure of something, say so plainly. Check that every reference really supports the point it is used for.";
 
 var TYPOLOGY_RULES =
   "TYPOLOGY OF CHRIST: A 'type' is a real person, event, object or ceremony in the Old Testament that God planned as a picture or shadow pointing to Christ (Colossians 2:17; Hebrews 8:5; 10:1). " +
@@ -2879,15 +3334,16 @@ var MYSTERY_RULES =
 
 var WEAVE_RULES =
   "HOW TO WRITE THE MESSAGE (very important): Write ONE connected message that flows like a good preacher speaking to the people. It is not a list and not a lecture with sections. " +
-  "NEVER use labels, headings, numbering or bullets inside the message, and NEVER write lens names such as 'Bible Foundation:', 'Typology:', 'Life of Christ:', 'Life of the Believer:', 'Life of the Church:' or 'Life Application:'. " +
+  "NEVER use labels, headings, numbering or bullets inside the message, and NEVER write lens names such as 'Bible Foundation:', 'Typology:', 'Life of Christ:', 'Life of the Believer:', 'Life of the Church:', 'Church Life:', 'Prayer:' or 'Life Application:'. " +
   "Instead, let the message move naturally with bridge sentences such as 'Now see how God was already pointing to Jesus here', 'This was a picture of', 'This is good news for you who believe', 'And for us as a church', 'So what must we do today?'. " +
   "Cover all of these, in this natural order: " +
   "(1) Begin in the passage: its setting and what it says, explained simply (the Bible foundation). " +
   "(2) Go deeper to the hidden meaning and the Old Testament picture (typology) that points to Christ, with New Testament support, and reveal any mystery that is now made clear in Christ. " +
   "(3) Put Jesus at the centre: who He is and what He has done for us (His coming, life, cross, resurrection, ascension and return). " +
   "(4) Show what this truth does in the life of the believer (faith, prayer, holiness, family, work, suffering, witness). " +
-  "(5) Show what it means for the church together (love, unity, worship, giving, mission). " +
-  "(6) Finish with clear life application for today, using real village examples (family, farming, work, money, health, forgiveness, hard times), and a clear call to respond to Jesus. " +
+  "(5) Show what it means for the church together (church life: love, unity, worship, fellowship, giving, serving, mission). " +
+  "(6) Show how this truth leads us to pray: how Jesus Himself prayed and still prays for us (Luke 5:16; Hebrews 7:25), how the believer prays in the name of Jesus and by the Holy Spirit (John 14:13-14; Romans 8:26), and how the church prays together (Acts 2:42; Acts 12:5). Say clearly what we should ask God for because of this truth. " +
+  "(7) Finish with clear life application for today, using real village examples (family, farming, work, money, health, forgiveness, hard times), a clear call to respond to Jesus, and a short prayer the people can pray together. " +
   "Each paragraph has 3 to 6 short sentences. Support what you teach with scripture references in brackets, like (John 3:16). Do not copy long verse text.";
 
 var STUDY_RULES =
@@ -2895,11 +3351,11 @@ var STUDY_RULES =
   "'◆ Welcome and Opening Prayer' (2 or 3 warm sentences and a short prayer); " +
   "'◆ Read Together' (the passage references and who reads); " +
   "'◆ What the Passage Says' (2 or 3 short paragraphs telling what happens or is taught, in simple words); " +
-  "'◆ What It Means' (the full teaching in flowing paragraphs: context, the Old Testament picture that points to Christ, how it shows Jesus, what it means for the believer and for the church; no lens labels); " +
-  "'◆ Talk Together' (6 to 8 simple numbered questions: first easy questions about what the passage says, then questions about its meaning, then questions about life today; include at least one about Jesus and one about the church); " +
+  "'◆ What It Means' (the full teaching in flowing paragraphs: context, the Old Testament picture that points to Christ, how it shows Jesus, what it means for the believer, for the church, and how it shapes our prayer; no lens labels); " +
+  "'◆ Talk Together' (6 to 8 simple numbered questions: first easy questions about what the passage says, then questions about its meaning, then questions about life today; include at least one about Jesus, one about the church and one about prayer); " +
   "'◆ Living It Out This Week' (2 or 3 clear things to do, written as short sentences, not bullets); " +
   "'◆ Remember' (one short truth to remember and the memory verse as a reference only); " +
-  "'◆ Closing Prayer' (a short prayer); " +
+  "'◆ Closing Prayer' (a short prayer that matches the truth of this lesson); " +
   "'◆ Leader Notes' (short hints for answering the discussion questions). " +
   "For a study of several weeks, start each week with '◆ Session 1: Title' (then 2, 3...) and keep every session shorter, using the same order. " +
   "Fill the other fields too: title (start with 'Bible Study:'), scriptures, objectives, introduction, summary, conclusion, prayerPoints.";
@@ -2925,14 +3381,32 @@ var AI_CHAT_RULES =
 var AI_MODE_DIRECTIVES = {
   auto: "MODE: AUTO. Decide from the user's words: if they ask for a sermon, message or devotional write one; if they ask for a Bible study write one; otherwise answer as a chat.",
   chat: "MODE: BIBLE CHAT. The user wants a conversation. Answer like a wise, kind pastor-teacher. Do NOT write a sermon JSON unless the user clearly asks for a sermon or Bible study in this message.",
-  sermon: "MODE: WRITE A SERMON. Treat the user's message as a request for a sermon on that topic or passage and reply with the SERMON_JSON, as a passage message unless they ask for another form.",
-  study: "MODE: CREATE A BIBLE STUDY. Treat the user's message as a request for a Bible study on that passage or topic and reply with the SERMON_JSON using the Bible study layout (msgtype 'general').",
-  typology: "MODE: TYPOLOGY OF CHRIST. In a chat reply (no JSON) explain the Old Testament picture the user asked about: where it is in the Old Testament, what it meant at that time, exactly how Christ fulfils it with New Testament proof, where Christ is greater, and what it means for the believer and for the church. If the user gives a New Testament passage, show the Old Testament pictures behind it.",
-  mystery: "MODE: REVEAL THE MYSTERY. In a chat reply (no JSON) show the mystery or hidden truth in the passage or topic: what was hidden or unclear before, how God has made it clear in Christ and the New Testament, with references, and what it means for us today. Keep to what Scripture really says and warn against guesses.",
-  interpret: "MODE: INTERPRET THE PASSAGE. In a chat reply (no JSON) interpret the passage with clear understanding: first the setting and the writer's meaning, then go through the passage section by section in simple words, then show how it points to Christ, then what the believer and the church should do today. Mention gently if Christians understand a part in different ways.",
+  sermon: "MODE: WRITE A SERMON. Treat the user's message as a request for a sermon on that topic or passage and reply with the SERMON_JSON, as a passage message unless they ask for another form. In one flowing message connect the truth to the life of Christ, the life of the believer, church life and prayer.",
+  study: "MODE: CREATE A BIBLE STUDY. Treat the user's message as a request for a Bible study on that passage or topic and reply with the SERMON_JSON using the Bible study layout (msgtype 'general'). Connect the truth to the life of Christ, the life of the believer, church life and prayer.",
+  typology: "MODE: TYPOLOGY OF CHRIST. In a chat reply (no JSON) and in flowing paragraphs, explain the Old Testament picture the user asked about: where it is in the Old Testament and what it meant at that time, exactly how Christ fulfils it with New Testament proof and where He is greater. Then connect it to the life of Christ (His life, cross and resurrection), the life of the believer, church life and prayer. If the user gives a New Testament passage, show the Old Testament pictures behind it. Do not use these names as headings or labels.",
+  mystery: "MODE: REVEAL THE MYSTERY. In a chat reply (no JSON) and in flowing paragraphs show the mystery or hidden truth in the passage or topic: what was hidden or unclear before, how God has made it clear in Christ and the New Testament, with references. Then connect it to the life of Christ, the life of the believer, church life and prayer, and say what it means for us today. Keep to what Scripture really says and warn against guesses. Do not use these names as headings or labels.",
+  interpret: "MODE: INTERPRET THE PASSAGE. In a chat reply (no JSON) interpret the passage with clear understanding: first the setting and the writer's meaning, then go through the passage section by section in simple words, then show how it points to Christ and connect it to the life of Christ, the life of the believer, church life and prayer, and what to do today. Mention gently if Christians understand a part in different ways. Do not use these names as headings or labels.",
   review: "MODE: REVIEW MY DRAFT. Review the Editor draft given below. Use heading lines starting with '◆ ' for: Doctrinal soundness; Is Christ clearly shown (and are any pictures or mysteries stretched beyond Scripture); Simple English check (name hard words and give easy replacements); Flow and life application (does it flow like one message without labels, and is the application clear for today); Cross-references to add (references only); Ways to strengthen it."
 };
-var AI_LENGTH_WORDS = {short:"about 600 words (6 to 8 paragraphs)", medium:"about 1000 words (10 to 12 paragraphs)", "long":"about 1600 words (16 to 20 paragraphs)", xl:"about 2400 words (24 to 30 paragraphs)"};
+var AI_LENGTH_CHOICES = [100,150,200,250,300,350,400,450,500,550,600,650,1000,1600,2400];
+function aiLengthText(v){
+  var n = parseInt(v, 10), p;
+  if(isNaN(n)){ n = 1000; }
+  if(n <= 150){ p = "1 to 2 paragraphs"; }
+  else if(n <= 250){ p = "2 to 3 paragraphs"; }
+  else if(n <= 400){ p = "3 to 5 paragraphs"; }
+  else if(n <= 650){ p = "5 to 8 paragraphs"; }
+  else if(n <= 1000){ p = "10 to 12 paragraphs"; }
+  else if(n <= 1600){ p = "16 to 20 paragraphs"; }
+  else { p = "24 to 30 paragraphs"; }
+  return "about " + n + " words (" + p + ")";
+}
+function normLengthValue(v){
+  var mig = {short:"600", medium:"1000", "long":"1600", xl:"2400"};
+  v = String(v || "1000");
+  if(mig.hasOwnProperty(v)){ v = mig[v]; }
+  return AI_LENGTH_CHOICES.indexOf(parseInt(v, 10)) === -1 ? "1000" : String(parseInt(v, 10));
+}
 var AI_MODES = {
   chat:{icon:"💬", name:"Chat", ph:"Ask anything about the Bible…", hint:"Chat mode: I answer your questions like a pastor-teacher."},
   sermon:{icon:"✝", name:"Sermon", ph:"A topic or passage, e.g. The Lamb of God (John 1:29)", hint:"Sermon mode: I write a flowing passage message and put it in the Editor."},
@@ -2944,7 +3418,7 @@ var AI_MODES = {
 };
 var AI_MODE_ORDER = ["chat","sermon","study","typology","mystery","interpret","review"];
 var aiMode = "auto";
-var aiLength = "medium";
+var aiLength = "1000";
 var aiThinkTimer = null;
 var LS_AI_CHAT = "dsm_ai_chat_v1";
 
@@ -2955,7 +3429,7 @@ function buildAIChatRequest(userMessage, bibleContext, hist){
     "You are the AI Bible Assistant inside the Daily Sermons app of " + settings.ministryName + " (Apostle Frank Tembo). You help a pastor to chat about the Bible, create Bible studies, and prepare sermons that show the light of Christ, reveal the mysteries of Scripture, explain the typology of Christ and interpret the Bible with clear understanding.\n\n" +
     SIMPLE_ENGLISH_RULES + "\n\n" + SOUND_TEACHING_RULES + "\n\n" + TYPOLOGY_RULES + "\n\n" + MYSTERY_RULES + "\n\n" + WEAVE_RULES + "\n\n" + STUDY_RULES + "\n\n" + AI_SCHEMA_RULES + "\n\n" + AI_CHAT_RULES + "\n\n" +
     (AI_MODE_DIRECTIVES[aiMode] || AI_MODE_DIRECTIVES.auto) + "\n" +
-    "LENGTH: if you write a sermon or Bible study, make mainMessage.text " + (AI_LENGTH_WORDS[aiLength] || AI_LENGTH_WORDS.medium) + " unless the user asks for a different length.";
+    aiLengthRule();
 
   var user = "";
   if(bibleContext){ user += bibleContext + "\n\n"; }
@@ -2989,6 +3463,17 @@ function buildAIChatRequest(userMessage, bibleContext, hist){
   user += "User: " + userMessage;
   if(snapshot){ user += "\n\n[Current Editor draft — use it ONLY if the user asks about it or asks to improve it]\n" + snapshot; }
   return {system:system, user:user};
+}
+function aiLengthRule(){
+  var lt = aiLengthText(aiLength), n = parseInt(aiLength, 10);
+  var explain = (aiMode === "typology" || aiMode === "mystery" || aiMode === "interpret");
+  var r;
+  if(explain){ r = "LENGTH: make your whole answer " + lt + "."; }
+  else if(aiMode === "chat" || aiMode === "review"){ r = "LENGTH: keep a normal chat length unless the user asks for more. If you write a sermon or Bible study, make mainMessage.text " + lt + "."; }
+  else{ r = "LENGTH: if you write a sermon or Bible study, make mainMessage.text " + lt + " unless the user asks for a different length."; }
+  if(n <= 300){ r += " Because this is short, be brief but do not skip anything: in a few clear sentences each, still connect the passage, Christ, the believer, the church and prayer. Choose one main idea and keep to it."; }
+  if(aiMode === "study" || aiMode === "auto"){ if(n < 400){ r += " For a Bible study under 400 words use only these sections: Read Together, What It Means, Talk Together (3 questions) and Closing Prayer."; } }
+  return r;
 }
 function buildUnifiedAIPrompt(userMessage, bibleContext, hist){
   var r = buildAIChatRequest(userMessage, bibleContext, hist);
@@ -3028,7 +3513,7 @@ function extractJsonFromText(text){
 }
 
 /* ---------- safety net: no lens labels, no numbering in passage messages ---------- */
-var LENS_LABEL_RE = /^\s*(?:[-•*]\s*|\d+[\.\)]\s*)?(?:(?:Bible|Biblical) Foundation|(?:Picture in the Old Testament|Old Testament Picture)(?:\s*\(Typology\))?|(?:Biblical )?Typology|Life of (?:Jesus )?Christ|Life of (?:the )?Believers?|Life of the Church|Life Application(?: Today)?|Application Today)\s*[:\-–—]\s*/i;
+var LENS_LABEL_RE = /^\s*(?:[-•*]\s*|\d+[\.\)]\s*)?(?:(?:Bible|Biblical) Foundation|(?:Picture in the Old Testament|Old Testament Picture)(?:\s*\(Typology\))?|(?:Biblical )?Typology|Life of (?:Jesus )?Christ|Life of (?:the )?Believers?|Life of the Church|Life Application(?: Today)?|Application Today|Church Life|Life of Prayer|Prayer Life|Prayer)(?::\s*|\s+[\-–—]\s+)/i;
 function stripLensLabel(s){
   var prev, n = 0;
   s = String(s || "").replace(/\*\*|__/g, "");
@@ -3056,6 +3541,17 @@ function cleanProse(text, isStudy){
     out.push(isStudy ? kept.join("\n") : kept.join(" "));
   }
   return out.join("\n\n");
+}
+var LENS_HEADING_RE = /^◆\s*(?:(?:Bible|Biblical) Foundation|Foundation|Typology|(?:Biblical )?Typology of Christ|Life of (?:Jesus )?Christ|Life of (?:the )?Believers?|The Believer|Life of the Church|Church Life|Life of Prayer|Prayer Life|Prayer|Life Application(?: Today)?|Application Today)\s*[:\-–—]?\s*$/i;
+function cleanChatLenses(text){
+  var lines = String(text || "").replace(/\r/g, "").split("\n"), out = [], i, ln;
+  for(i=0;i<lines.length;i++){
+    ln = lines[i];
+    if(LENS_HEADING_RE.test(ln.replace(/^\s+|\s+$/g, ""))){ continue; }
+    if(ln.replace(/^\s+/, "").charAt(0) !== "◆"){ ln = stripLensLabel(ln); }
+    out.push(ln);
+  }
+  return out.join("\n").replace(/\n{3,}/g, "\n\n");
 }
 function cleanInline(s){ return stripLensLabel(s).replace(/^\s+|\s+$/g, ""); }
 function cleanList(arr, stripNum){
@@ -3283,7 +3779,7 @@ function updateAIModeUi(){
   var inp = document.getElementById('aiChatInput');
   if(inp){ inp.placeholder = info ? info.ph : "Write a message… ask a question, paste a passage, or ask for a sermon or Bible study"; }
   var lr = document.getElementById('aiLenRow');
-  if(lr){ lr.style.display = (aiMode === "auto" || aiMode === "sermon" || aiMode === "study") ? "" : "none"; }
+  if(lr){ lr.style.display = (aiMode === "auto" || aiMode === "sermon" || aiMode === "study" || aiMode === "typology" || aiMode === "mystery" || aiMode === "interpret") ? "" : "none"; }
 }
 function startThinkingTimer(label){
   stopThinkingTimer();
@@ -3298,7 +3794,7 @@ function stopThinkingTimer(){
 }
 function aiInitUi(){
   aiMode = AI_MODES[settings.aiMode] ? settings.aiMode : "auto";
-  aiLength = AI_LENGTH_WORDS[settings.aiLength] ? settings.aiLength : "medium";
+  aiLength = normLengthValue(settings.aiLength);
   var ls = document.getElementById('aiLength');
   if(ls){ ls.value = aiLength; }
   aiRestoreChat();
@@ -3381,7 +3877,9 @@ function handleAIReply(text, idx, ask){
       return;
     }
   }
-  aiChatHistory[idx] = {role:'ai', ask:ask, note:note, text:text.trim()};
+  var plain = text.trim();
+  if(aiMode !== 'review' && aiMode !== 'chat'){ plain = cleanChatLenses(plain); }
+  aiChatHistory[idx] = {role:'ai', ask:ask, note:note, text:plain};
   renderAIChat();
 }
 
