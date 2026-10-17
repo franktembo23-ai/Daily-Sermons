@@ -127,6 +127,11 @@
   #f_versetext{font-family:Georgia,'Noto Serif',serif; font-size:16px; line-height:1.6;}
   #bibleOverlay .card{margin-top:12px;}
   #bToast{position:fixed; left:50%; bottom:22px; transform:translateX(-50%); max-width:92%; background:var(--navy-dark); color:#fff; padding:10px 16px; border-radius:12px; z-index:95; font-size:14px; line-height:1.4; display:none; box-shadow:0 6px 20px rgba(0,0,0,.3); font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;}
+  /* ===== UPDATE: access control ===== */
+  body:not(.is-admin) .admin-only{display:none !important;}
+  .admin-link{background:none; border:none; color:#9a9a9a; font-size:12px; cursor:pointer; padding:6px 12px; font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;}
+  .admin-link:hover{color:var(--navy);}
+  #adminModal{display:none; position:fixed; left:0; top:0; right:0; bottom:0; z-index:100; background:rgba(0,0,0,.55); align-items:center; justify-content:center; padding:16px;}
 </style>
 </head>
 <body class="font-ui">
@@ -151,17 +156,18 @@
       <div id="hdrDay" class="text-2xl font-bold brand-gold" style="font-family:Georgia,serif;">Saturday</div>
       <div id="hdrDate" class="text-sm text-gray-200">11 July 2026</div>
     </div>
-    <div id="connStatus" class="badge font-ui" style="background:#2e7d32;color:#fff;">● Local</div>
+    <div id="connStatus" class="badge font-ui admin-only" style="background:#2e7d32;color:#fff;">● Local</div>
   </div>
 
   <!-- TABS -->
-  <div class="flex gap-1 mt-5 overflow-x-auto">
+  <div class="flex gap-1 mt-5 overflow-x-auto admin-only">
     <div class="tab-btn active" data-tab="preview" onclick="switchTab('preview')">📖 Preview</div>
     <div class="tab-btn" data-tab="editor" onclick="switchTab('editor')">✍️ Editor</div>
     <div class="tab-btn" data-tab="library" onclick="switchTab('library')">📚 Library</div>
     <div class="tab-btn" data-tab="settings" onclick="switchTab('settings')">⚙️ Settings</div>
     <div class="tab-btn" data-tab="ai" onclick="switchTab('ai')">🤖 AI Bible</div>
     <div class="tab-btn" data-tab="bible" onclick="switchTab('bible')">📖 Bible</div>
+    <div class="tab-btn" onclick="adminLock()">🔓 Lock</div>
   </div>
 </div>
 
@@ -171,12 +177,12 @@
 <div id="tab-preview" class="tab-panel">
   <div class="card p-5 mt-4">
     <div class="flex items-center justify-between flex-wrap gap-3 mb-3">
-      <div class="flex gap-2">
+      <div class="flex gap-2 admin-only">
         <button class="btn btn-outline btn-sm" onclick="navSermon(-1)">◀ Previous</button>
         <button class="btn btn-gold btn-sm" onclick="loadToday()">Today</button>
         <button class="btn btn-outline btn-sm" onclick="navSermon(1)">Next ▶</button>
       </div>
-      <div class="flex gap-2">
+      <div class="flex gap-2 admin-only">
         <button class="btn btn-navy btn-sm" onclick="printSermon()">🖨 Print / PDF</button>
         <button class="btn btn-navy btn-sm" onclick="exportSermonDocx()">📄 DOCX</button>
         <button class="btn btn-navy btn-sm" onclick="exportSermonTxt()">📝 TXT</button>
@@ -335,6 +341,32 @@
 
 <!-- ============ SETTINGS TAB ============ -->
 <div id="tab-settings" class="tab-panel hidden">
+  <div class="card p-5 mt-4">
+    <div class="font-bold text-lg" style="color:var(--navy-dark);">🔐 Access for church members</div>
+    <div id="adminDefaultWarn" class="text-sm sb-bad mt-2" style="display:none;">⚠ You are still using the starting password. Change it below before you share the app.</div>
+    <div class="text-xs text-gray-500 mt-1 mb-3">Church members see only today's message. Share the church link below. It only tells their phone where to find the message and gives no other access.</div>
+    <label>Church link</label>
+    <div class="flex gap-2">
+      <input type="text" id="adminChurchLink" readonly>
+      <button class="btn btn-outline btn-sm" onclick="adminCopyLink()">📋 Copy</button>
+    </div>
+    <div class="flex gap-2 mt-2"><button class="btn btn-gold btn-sm" onclick="adminShareWhatsApp()">Share on WhatsApp</button></div>
+    <div id="adminLinkNote" class="text-xs mt-2"></div>
+
+    <div class="mt-5 divider-gold rounded"></div>
+    <div class="font-bold mt-4" style="color:var(--navy-dark);">Change admin password</div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+      <div><label>New password (at least 8 characters)</label><input type="password" id="adminNewPw" autocomplete="new-password"></div>
+      <div><label>Repeat new password</label><input type="password" id="adminNewPw2" autocomplete="new-password"></div>
+    </div>
+    <button class="btn btn-navy btn-sm mt-3" onclick="adminMakeHash()">Create password lines</button>
+    <div id="adminHashMsg" class="text-xs mt-2"></div>
+    <div id="adminHashOut" style="display:none;" class="mt-2">
+      <textarea id="adminHashText" rows="3" readonly style="font-family:monospace; font-size:12px;"></textarea>
+      <button class="btn btn-outline btn-sm mt-2" onclick="adminCopyHash()">📋 Copy the 3 lines</button>
+      <div class="text-xs text-gray-600 mt-2">1) Open <b>index.html</b> in a text editor (Notepad). 2) Find the three lines that start with <b>var ADMIN_SALT</b>, <b>var ADMIN_HASH</b> and <b>var ADMIN_DEFAULT</b>. 3) Replace them with the lines above. 4) Save and upload the file again. The new password works after you upload. The password itself is never stored in the file, only a scrambled version of it.</div>
+    </div>
+  </div>
   <div class="card p-5 mt-4">
     <div class="font-bold text-lg mb-3" style="color:var(--navy-dark);">Settings — Control Panel</div>
 
@@ -644,6 +676,38 @@
 
 </div>
 
+<div class="text-center mt-6 mb-8"><button id="adminFooterBtn" class="admin-link" onclick="adminFooterClick()">🔒 Admin</button></div>
+
+<div id="adminModal">
+  <div class="card p-5" style="width:100%; max-width:380px; max-height:92vh; overflow-y:auto;">
+    <div class="font-bold text-lg" style="color:var(--navy-dark);">🔒 Admin login</div>
+    <div class="text-xs text-gray-500 mb-3">Only the pastor can open the Editor, Library, Settings, AI Bible and Bible.</div>
+    <label>Password</label>
+    <input type="password" id="adminPw" autocomplete="current-password" onkeydown="adminKey(event)">
+    <label class="!normal-case !font-normal flex items-center gap-2 mt-2" style="font-size:13px;"><input type="checkbox" id="adminRemember" style="width:auto;"> Keep me unlocked on this device for 30 days</label>
+    <div id="adminMsg" class="text-sm mt-2 sb-bad"></div>
+    <div class="flex gap-2 mt-3">
+      <button class="btn btn-gold" onclick="adminLogin()">Unlock</button>
+      <button class="btn btn-outline" onclick="adminClose()">Cancel</button>
+    </div>
+    <div class="mt-4 pt-3" style="border-top:1px solid #eee;">
+      <button class="admin-link" style="padding:0;" onclick="adminToggleForgot()">Forgot the password, or want a new one?</button>
+      <div id="fpBox" style="display:none;" class="mt-2">
+        <div class="text-xs text-gray-600 mb-2">Choose a new password. You will get 3 lines to paste into <b>index.html</b>. Nothing is sent anywhere and nothing is changed until you upload the file.</div>
+        <input type="password" id="fpNewPw" placeholder="New password (8 or more characters)" autocomplete="new-password">
+        <input type="password" id="fpNewPw2" placeholder="Repeat new password" autocomplete="new-password" class="mt-2">
+        <button class="btn btn-navy btn-sm mt-2" onclick="adminMakeHash('fp')">Create the 3 lines</button>
+        <div id="fpHashMsg" class="text-xs mt-2"></div>
+        <div id="fpHashOut" style="display:none;" class="mt-2">
+          <textarea id="fpHashText" rows="4" readonly style="font-family:monospace; font-size:12px;"></textarea>
+          <button class="btn btn-outline btn-sm mt-2" onclick="adminCopyHash('fp')">📋 Copy the 3 lines</button>
+          <div class="text-xs text-gray-600 mt-2">1) Open <b>index.html</b> in Notepad. 2) Find the three lines that start with <b>var ADMIN_SALT</b>, <b>var ADMIN_HASH</b> and <b>var ADMIN_DEFAULT</b>. 3) Replace them with the lines above. 4) Save and upload again. The new password works after the upload.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Hidden print area -->
 <div id="printArea" style="display:none;"></div>
 
@@ -745,8 +809,10 @@ function seedFirstSermon(){
 /* ---------- INIT ---------- */
 window.onload = function(){
   loadSettings();
+  adminRestore();
+  if(adminApplyDbParam()){ loadSettings(); }
   loadLocalSermons();
-  if(Object.keys(sermons).length===0){ seedFirstSermon(); }
+  if(Object.keys(sermons).length===0 && adminUnlocked){ seedFirstSermon(); }
   populateVersionSelects();
   renderHeaderDate();
   setInterval(renderHeaderDate, 30000);
@@ -757,6 +823,7 @@ window.onload = function(){
   if(settings.syncEnabled){ initFirebase(); }
   switchTab('preview');
   initNewFeatures();
+  adminInit();
 };
 
 function populateVersionSelects(){
@@ -777,6 +844,7 @@ function populateVersionSelects(){
 
 /* ---------- TABS ---------- */
 function switchTab(name){
+  if(name !== 'preview' && !adminUnlocked){ adminOpen(name); return; }
   var panels = document.getElementsByClassName('tab-panel');
   for(var i=0;i<panels.length;i++){ panels[i].classList.add('hidden'); }
   document.getElementById('tab-'+name).classList.remove('hidden');
@@ -787,7 +855,7 @@ function switchTab(name){
     if(btns[k].getAttribute('data-tab')===name){ btns[k].classList.add('active'); }
   }
   if(name==='library'){ renderLibrary(); if(typeof vaultRender === 'function'){ vaultRender(); } }
-  if(name==='settings'){ updateStorageStats(); if(typeof renderConnections === 'function'){ renderConnections(); sbRefreshStats(); } }
+  if(name==='settings'){ if(typeof adminRenderLinkUi === 'function'){ adminRenderLinkUi(); } updateStorageStats(); if(typeof renderConnections === 'function'){ renderConnections(); sbRefreshStats(); } }
   if(name==='ai' && typeof updateAIBadges === 'function'){ updateAIBadges(); }
   if(name==='bible' && typeof bibleOnOpen === 'function'){ bibleOnOpen(); }
 }
@@ -909,7 +977,8 @@ function initFirebase(){
         for(var id in val){ sermons[id] = val[id]; }
         saveLocalSermons();
         renderLibrary();
-        if(currentPreviewId){ renderPreview(currentPreviewId); }
+        if(!adminUnlocked){ loadToday(); }
+        else if(currentPreviewId){ renderPreview(currentPreviewId); }
       }
       document.getElementById('connStatus').innerText = "● Synced";
       document.getElementById('connStatus').style.background = "#2e7d32";
@@ -938,12 +1007,12 @@ function toggleSync(){
   }
 }
 function pushToFirebase(sermon){
-  if(settings.syncEnabled && fbDb){
+  if(adminUnlocked && settings.syncEnabled && fbDb){
     fbDb.ref("Daily Sermons/"+sermon.id).set(sermon);
   }
 }
 function deleteFromFirebase(id){
-  if(settings.syncEnabled && fbDb){
+  if(adminUnlocked && settings.syncEnabled && fbDb){
     fbDb.ref("Daily Sermons/"+id).remove();
   }
 }
@@ -1359,12 +1428,13 @@ function loadToday(){
   var tk = todayKey();
   var found = null;
   for(var i=0;i<arr.length;i++){ if(arr[i].date===tk){ found = arr[i]; break; } }
-  if(!found && arr.length){
-    // fallback: closest past date
+  if(!found && adminUnlocked && arr.length){
+    // admin only: fall back to the closest past date
     for(var j=arr.length-1;j>=0;j--){ if(arr[j].date<=tk){ found = arr[j]; break; } }
     if(!found){ found = arr[0]; }
   }
   if(found){ currentPreviewId = found.id; renderPreview(found.id); }
+  else if(!adminUnlocked){ currentPreviewId = null; document.getElementById('previewBody').innerHTML = viewerEmptyHtml(); }
   else{ document.getElementById('previewBody').innerHTML = "<div class='text-gray-400 text-center py-10'>No sermons yet. Go to the Editor tab to create today's sermon.</div>"; }
 }
 function navSermon(dir){
@@ -4059,6 +4129,313 @@ function handleAIReply(text, idx, ask){
   if(aiMode !== 'review' && aiMode !== 'chat'){ plain = cleanChatLenses(plain); }
   aiChatHistory[idx] = {role:'ai', ask:ask, note:note, text:plain};
   renderAIChat();
+}
+
+
+/* =========================================================================
+   UPDATE (17 Oct 2026): ACCESS CONTROL. Church members see only today's message.
+   Editor, Library, Settings, AI Bible and Bible are hidden and locked behind the
+   admin password. NOTE: this app has no server, so this is a strong lock for normal
+   use, not protection against a determined technical person.
+   ========================================================================= */
+
+/* ADMIN LOGIN - replace these 3 lines to change the password (use Settings > Change admin password, or the 'Forgot the password' link in the login window) */
+var ADMIN_SALT = "b9f213e8ef11ae7a272263c43d661ac0";
+var ADMIN_HASH = "7b7744664e62d386d7c60d2bd18444202ec54aaa00d6c5d92ff3c32824b3b458";
+var ADMIN_DEFAULT = true;
+/* END ADMIN LOGIN */
+
+var ADMIN_ROUNDS = 20000;
+var ADMIN_SS_KEY = "dsm_admin_session";
+var ADMIN_LS_KEY = "dsm_admin_until";
+var ADMIN_FAIL_KEY = "dsm_admin_fail";
+var ADMIN_IDLE_MS = 30 * 60 * 1000;
+var EMBEDDED_DB_URL = "";
+var DB_URL_RE = /^https:\/\/[a-z0-9-]+(\.[a-z0-9-]+)*\.(firebaseio\.com|firebasedatabase\.app)\/?$/i;
+var adminUnlocked = false;
+var adminRemembered = false;
+var adminPendingTab = "";
+var adminLastActive = new Date().getTime();
+var viewerDay = "";
+
+/*SHA-BEGIN*/
+var SHA_K = [
+  0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+  0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+  0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+  0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+  0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+  0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+  0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+  0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
+];
+function ror32(x, n){ return (x >>> n) | (x << (32 - n)); }
+function sha256Bytes(msg){
+  var H = [0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  var l = msg.length, hi = Math.floor(l / 0x20000000), lo = (l << 3) >>> 0;
+  var m = msg.slice(0), w = new Array(64), i, off, a, b, c, d, e, f, g, h, s0, s1, S0, S1, ch, maj, t1, t2, out = [];
+  m.push(0x80);
+  while((m.length % 64) !== 56){ m.push(0); }
+  m.push((hi >>> 24) & 255, (hi >>> 16) & 255, (hi >>> 8) & 255, hi & 255, (lo >>> 24) & 255, (lo >>> 16) & 255, (lo >>> 8) & 255, lo & 255);
+  for(off=0; off<m.length; off+=64){
+    for(i=0;i<16;i++){ w[i] = (m[off+4*i] << 24) | (m[off+4*i+1] << 16) | (m[off+4*i+2] << 8) | m[off+4*i+3]; }
+    for(i=16;i<64;i++){
+      s0 = ror32(w[i-15], 7) ^ ror32(w[i-15], 18) ^ (w[i-15] >>> 3);
+      s1 = ror32(w[i-2], 17) ^ ror32(w[i-2], 19) ^ (w[i-2] >>> 10);
+      w[i] = (w[i-16] + s0 + w[i-7] + s1) | 0;
+    }
+    a = H[0]; b = H[1]; c = H[2]; d = H[3]; e = H[4]; f = H[5]; g = H[6]; h = H[7];
+    for(i=0;i<64;i++){
+      S1 = ror32(e, 6) ^ ror32(e, 11) ^ ror32(e, 25);
+      ch = (e & f) ^ (~e & g);
+      t1 = (h + S1 + ch + SHA_K[i] + w[i]) | 0;
+      S0 = ror32(a, 2) ^ ror32(a, 13) ^ ror32(a, 22);
+      maj = (a & b) ^ (a & c) ^ (b & c);
+      t2 = (S0 + maj) | 0;
+      h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+    }
+    H[0] = (H[0] + a) | 0; H[1] = (H[1] + b) | 0; H[2] = (H[2] + c) | 0; H[3] = (H[3] + d) | 0;
+    H[4] = (H[4] + e) | 0; H[5] = (H[5] + f) | 0; H[6] = (H[6] + g) | 0; H[7] = (H[7] + h) | 0;
+  }
+  for(i=0;i<8;i++){ out.push((H[i] >>> 24) & 255, (H[i] >>> 16) & 255, (H[i] >>> 8) & 255, H[i] & 255); }
+  return out;
+}
+function utf8Bytes(str){
+  var s = unescape(encodeURIComponent(String(str))), out = [], i;
+  for(i=0;i<s.length;i++){ out.push(s.charCodeAt(i)); }
+  return out;
+}
+function bytesToHex(b){
+  var h = "", i, x;
+  for(i=0;i<b.length;i++){ x = b[i].toString(16); h += (x.length < 2 ? "0" : "") + x; }
+  return h;
+}
+function adminHashOf(salt, pw){
+  var p = utf8Bytes(pw), s = utf8Bytes(salt), h = sha256Bytes(s.concat(p)), i;
+  for(i=0;i<ADMIN_ROUNDS;i++){ h = sha256Bytes(h.concat(p).concat(s)); }
+  return bytesToHex(h);
+}
+function adminRandomSalt(){
+  var bytes = [], i, arr;
+  try{
+    if(window.crypto && window.crypto.getRandomValues){
+      arr = new Uint8Array(16); window.crypto.getRandomValues(arr);
+      for(i=0;i<16;i++){ bytes.push(arr[i]); }
+    }
+  }catch(e){ bytes = []; }
+  if(bytes.length !== 16){ bytes = []; for(i=0;i<16;i++){ bytes.push(Math.floor(Math.random() * 256)); } }
+  return bytesToHex(bytes);
+}
+/*SHA-END*/
+
+function hexEqual(a, b){
+  if(a.length !== b.length){ return false; }
+  var diff = 0, i;
+  for(i=0;i<a.length;i++){ diff |= (a.charCodeAt(i) ^ b.charCodeAt(i)); }
+  return diff === 0;
+}
+function adminVerify(pw){ return hexEqual(adminHashOf(ADMIN_SALT, pw), ADMIN_HASH); }
+
+/* ---------- session ---------- */
+function adminRestore(){
+  try{
+    if(sessionStorage.getItem(ADMIN_SS_KEY) === "1"){ adminUnlocked = true; }
+    var until = parseInt(localStorage.getItem(ADMIN_LS_KEY) || "0", 10);
+    if(until > new Date().getTime()){ adminUnlocked = true; adminRemembered = true; }
+    else if(until){ localStorage.removeItem(ADMIN_LS_KEY); }
+  }catch(e){}
+  applyAccessMode();
+}
+function applyAccessMode(){
+  var b = document.body, fb = document.getElementById('adminFooterBtn');
+  if(adminUnlocked){ b.classList.add('is-admin'); } else { b.classList.remove('is-admin'); }
+  if(fb){ fb.textContent = adminUnlocked ? "\uD83D\uDD13 Lock admin" : "\uD83D\uDD12 Admin"; }
+  if(!adminUnlocked){
+    var panels = document.getElementsByClassName('tab-panel'), i, visibleOther = false;
+    for(i=0;i<panels.length;i++){ if(panels[i].id !== 'tab-preview' && !panels[i].classList.contains('hidden')){ visibleOther = true; } }
+    if(visibleOther){ switchTab('preview'); }
+  }
+}
+function adminFooterClick(){ if(adminUnlocked){ adminLock(); } else { adminOpen(); } }
+function adminOpen(tab){
+  adminPendingTab = tab || "";
+  var m = document.getElementById('adminModal');
+  if(!m){ return; }
+  document.getElementById('adminPw').value = "";
+  document.getElementById('adminMsg').textContent = "";
+  m.style.display = "flex";
+  adminShowLockout();
+  try{ document.getElementById('adminPw').focus(); }catch(e){}
+}
+function adminClose(){
+  var m = document.getElementById('adminModal');
+  if(m){ m.style.display = "none"; }
+  var pw = document.getElementById('adminPw');
+  if(pw){ pw.value = ""; }
+  var fb = document.getElementById('fpBox');
+  if(fb){
+    fb.style.display = "none";
+    document.getElementById('fpNewPw').value = ""; document.getElementById('fpNewPw2').value = "";
+    document.getElementById('fpHashOut').style.display = "none"; document.getElementById('fpHashMsg').textContent = "";
+    document.getElementById('fpHashText').value = "";
+  }
+  adminPendingTab = "";
+}
+function adminKey(e){
+  if(e.key === "Enter"){ e.preventDefault(); adminLogin(); }
+  else if(e.key === "Escape"){ adminClose(); }
+}
+function adminFailState(){
+  try{ return JSON.parse(localStorage.getItem(ADMIN_FAIL_KEY) || "{}") || {}; }catch(e){ return {}; }
+}
+function adminShowLockout(){
+  var st = adminFailState(), now = new Date().getTime(), msg = document.getElementById('adminMsg');
+  if(st.until && st.until > now){
+    msg.textContent = "Too many wrong tries. Please wait " + Math.ceil((st.until - now) / 1000) + " seconds.";
+    return true;
+  }
+  return false;
+}
+function adminLogin(){
+  var pw = document.getElementById('adminPw').value, msg = document.getElementById('adminMsg');
+  if(adminShowLockout()){ return; }
+  if(!pw){ msg.textContent = "Type the admin password."; return; }
+  msg.textContent = "Checking…";
+  setTimeout(function(){
+    var good = false;
+    try{ good = adminVerify(pw); }catch(e){ good = false; }
+    if(good){ adminSuccess(); return; }
+    var st = adminFailState(), n = (st.n || 0) + 1, until = 0;
+    if(n >= 5){ until = new Date().getTime() + 60000; n = 0; }
+    try{ localStorage.setItem(ADMIN_FAIL_KEY, JSON.stringify({n:n, until:until})); }catch(e2){}
+    document.getElementById('adminPw').value = "";
+    msg.textContent = until ? "Too many wrong tries. Please wait 60 seconds." : ("Wrong password. " + (5 - n) + " tries left.");
+  }, 40);
+}
+function adminSuccess(){
+  adminUnlocked = true;
+  try{
+    sessionStorage.setItem(ADMIN_SS_KEY, "1");
+    localStorage.removeItem(ADMIN_FAIL_KEY);
+    if(document.getElementById('adminRemember').checked){
+      localStorage.setItem(ADMIN_LS_KEY, String(new Date().getTime() + 30 * 24 * 3600 * 1000));
+      adminRemembered = true;
+    } else { localStorage.removeItem(ADMIN_LS_KEY); adminRemembered = false; }
+  }catch(e){}
+  adminLastActive = new Date().getTime();
+  var tab = adminPendingTab;
+  adminClose();
+  applyAccessMode();
+  if(tab){ switchTab(tab); }
+  loadToday();
+  if(ADMIN_DEFAULT && typeof bibleToast === "function"){ bibleToast("⚠ You are using the starting password. Please change it in Settings."); }
+}
+function adminLock(){
+  adminUnlocked = false;
+  adminRemembered = false;
+  try{ sessionStorage.removeItem(ADMIN_SS_KEY); localStorage.removeItem(ADMIN_LS_KEY); }catch(e){}
+  if(typeof bibleOverlayOpen !== "undefined" && bibleOverlayOpen){ closeBibleOverlay(); }
+  applyAccessMode();
+  switchTab('preview');
+  loadToday();
+}
+
+/* ---------- church link (how members' phones find the message) ---------- */
+function adminApplyDbParam(){
+  var m = /[?&]db=([^&#]+)/.exec(window.location.search || ""), url = "", changed = false;
+  if(m){ try{ url = decodeURIComponent(m[1]); }catch(e){ url = ""; } }
+  else if(EMBEDDED_DB_URL){ url = EMBEDDED_DB_URL; }
+  if(url && DB_URL_RE.test(url) && !settings.dbUrl){
+    settings.dbUrl = url.replace(/\/$/, "");
+    settings.syncEnabled = true;
+    persistSettings();
+    changed = true;
+  }
+  if(m && window.history && window.history.replaceState){
+    try{ window.history.replaceState(null, "", window.location.pathname + window.location.hash); }catch(e2){}
+  }
+  return changed;
+}
+function adminChurchLinkValue(){
+  var db = String(settings.dbUrl || "").replace(/\/$/, "");
+  if(!db || !DB_URL_RE.test(db)){ return ""; }
+  return window.location.href.split('#')[0].split('?')[0] + "?db=" + encodeURIComponent(db);
+}
+function adminRenderLinkUi(){
+  var inp = document.getElementById('adminChurchLink'), note = document.getElementById('adminLinkNote'), warn = document.getElementById('adminDefaultWarn');
+  if(warn){ warn.style.display = ADMIN_DEFAULT ? "" : "none"; }
+  if(!inp || !note){ return; }
+  var link = adminChurchLinkValue();
+  inp.value = link;
+  if(!link){
+    note.className = "text-xs mt-2 sb-warn";
+    note.textContent = "First enter your Firebase Database URL in the Sync section below and switch Sync on. Then the church link appears here.";
+    return;
+  }
+  if(!/^https?:$/.test(window.location.protocol)){
+    note.className = "text-xs mt-2 sb-warn";
+    note.textContent = "This copy is open from a file. Upload the app to GitHub Pages or Cloudflare, open it from there, and the real web link will show here.";
+    return;
+  }
+  note.className = "text-xs mt-2 sb-ok";
+  note.textContent = "Share this link with church members. It only lets them read today's message.";
+}
+function adminCopyLink(){
+  var v = adminChurchLinkValue();
+  if(!v){ alert("The church link is not ready yet. Enter your Database URL and switch Sync on first."); return; }
+  copyText(v);
+}
+function adminShareWhatsApp(){
+  var v = adminChurchLinkValue();
+  if(!v){ alert("The church link is not ready yet. Enter your Database URL and switch Sync on first."); return; }
+  window.open("https://wa.me/?text=" + encodeURIComponent("Today's message from " + settings.ministryName + ": " + v), "_blank");
+}
+
+/* ---------- change the admin password (creates the 3 lines to paste into the file) ---------- */
+function adminHashIds(which){
+  return which === "fp" ? {p1:"fpNewPw", p2:"fpNewPw2", msg:"fpHashMsg", out:"fpHashOut", text:"fpHashText"}
+                        : {p1:"adminNewPw", p2:"adminNewPw2", msg:"adminHashMsg", out:"adminHashOut", text:"adminHashText"};
+}
+function adminMakeHash(which){
+  var ids = adminHashIds(which), g = function(x){ return document.getElementById(x); };
+  var p1 = g(ids.p1).value, p2 = g(ids.p2).value, out = g(ids.out), msg = g(ids.msg);
+  out.style.display = "none";
+  if(p1.length < 8){ msg.className = "text-xs mt-2 sb-bad"; msg.textContent = "Use at least 8 characters."; return; }
+  if(p1 !== p2){ msg.className = "text-xs mt-2 sb-bad"; msg.textContent = "The two passwords do not match."; return; }
+  msg.className = "text-xs mt-2 text-gray-600"; msg.textContent = "Creating…";
+  setTimeout(function(){
+    var salt = adminRandomSalt(), hash = adminHashOf(salt, p1);
+    g(ids.text).value = 'var ADMIN_SALT = "' + salt + '";\nvar ADMIN_HASH = "' + hash + '";\nvar ADMIN_DEFAULT = false;';
+    out.style.display = "";
+    msg.className = "text-xs mt-2 sb-ok"; msg.textContent = "Done. Now paste these lines into the file (steps below).";
+    g(ids.p1).value = ""; g(ids.p2).value = "";
+  }, 40);
+}
+function adminCopyHash(which){ copyText(document.getElementById(adminHashIds(which).text).value); }
+function adminToggleForgot(){
+  var b = document.getElementById('fpBox');
+  if(b){ b.style.display = (b.style.display === "none") ? "" : "none"; }
+}
+
+/* ---------- members' view: only today's message ---------- */
+function viewerEmptyHtml(){
+  var h = "<div class='text-center py-12'><div class='text-xl font-bold' style='color:var(--navy-dark);'>Today's message has not been posted yet</div>" +
+    "<div class='text-sm text-gray-500 mt-2'>Please check again later. God bless you.</div>";
+  if(!settings.dbUrl){ h += "<div class='text-xs text-gray-400 mt-4'>If this is your first time, please open the link that your pastor shared with you.</div>"; }
+  else{ h += "<div class='text-xs text-gray-400 mt-4'>If you think there should be a message, check your internet and refresh the page.</div>"; }
+  return h + "</div>";
+}
+function adminInit(){
+  viewerDay = todayKey();
+  setInterval(function(){
+    if(!adminUnlocked && todayKey() !== viewerDay){ viewerDay = todayKey(); loadToday(); }
+    if(adminUnlocked && !adminRemembered && (new Date().getTime() - adminLastActive) > ADMIN_IDLE_MS){ adminLock(); }
+  }, 30000);
+  var bump = function(){ adminLastActive = new Date().getTime(); };
+  document.addEventListener("click", bump);
+  document.addEventListener("keydown", bump);
+  document.addEventListener("touchstart", bump);
+  if(window.location.hash === "#admin" && !adminUnlocked){ adminOpen(); }
 }
 
 </script>
